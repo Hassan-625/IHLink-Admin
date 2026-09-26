@@ -1,0 +1,835 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Download, RefreshCw } from "lucide-react";
+import { ModulePage } from "@/components/ModulePage";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { adminSections, badge } from "./adminShared";
+
+type Row = {
+  id: string;
+  source: string;
+  reference: string;
+  product: string;
+  description: string;
+  amount: number;
+  direction: "credit" | "debit";
+  status: string;
+  created_at: string;
+  classification: "company" | "customer_funds" | "school_collection";
+};
+type Ledger = {
+  id: string;
+  reference: string;
+  product: string;
+  description: string;
+  amount: number;
+  direction: "credit" | "debit";
+  entry_type: string;
+  status: string;
+  occurred_at: string;
+};
+type Refund = {
+  id: string;
+  refund_number: string;
+  product: string;
+  source_reference: string;
+  amount: number;
+  reason: string;
+  status: string;
+  created_at: string;
+};
+const input =
+  "w-full rounded-xl border border-border bg-white p-3 text-sm outline-none focus:border-royal-500";
+const money = (value: number, currency = "NGN") =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+const ok = (status: string) =>
+  [
+    "successful",
+    "approved",
+    "paid",
+    "completed",
+    "active",
+    "posted",
+    "processed",
+  ].includes(status.toLowerCase());
+const pending = (status: string) =>
+  [
+    "pending",
+    "pending_review",
+    "awaiting_payment",
+    "initiated",
+    "requested",
+    "reviewing",
+    "approved",
+    "draft",
+  ].includes(status.toLowerCase());
+
+export function AdminFinancePage() {
+  const { profile } = useAuth();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [ledger, setLedger] = useState<Ledger[]>([]);
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [filter, setFilter] = useState("all");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [entry, setEntry] = useState({
+    product: "corporate",
+    direction: "credit",
+    entry_type: "revenue",
+    reference: "",
+    description: "",
+    amount: "",
+  });
+  const [refund, setRefund] = useState({
+    product: "datasub",
+    source_reference: "",
+    amount: "",
+    reason: "",
+  });
+
+  const load = useCallback(async () => {
+    if (!supabase) return;
+    const [dt, wf, dc, sp, si, ho, cp, bp, bi, le, rr] = await Promise.all([
+      supabase
+        .from("datasub_transactions")
+        .select("id,reference,service_type,amount,status,created_at")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("datasub_wallet_funding_requests")
+        .select("id,payment_reference,amount,status,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("datasub_reseller_commissions")
+        .select("id,commission_amount,tier_code,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("schoolpro_fee_payments")
+        .select("id,reference,amount,method,paid_at,created_at")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("schoolpro_payment_intents")
+        .select("id,reference,amount,gateway,status,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("host_orders")
+        .select(
+          "id,order_number,order_type,domain_name,amount,status,created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("consult_payments")
+        .select(
+          "id,payment_reference,amount,description,status,paid_at,created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase.from("business_payments").select("id,amount,status,paid_at,created_at,invoice_id").order("created_at",{ascending:false}).limit(100),
+      supabase.from("business_invoices").select("id,invoice_number,amount,status,created_at,order_id").order("created_at",{ascending:false}).limit(100),
+      supabase
+        .from("finance_ledger_entries")
+        .select(
+          "id,reference,product,description,amount,direction,entry_type,status,occurred_at",
+        )
+        .order("occurred_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("finance_refund_requests")
+        .select(
+          "id,refund_number,product,source_reference,amount,reason,status,created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(100),
+    ]);
+    const combined: Row[] = [
+      ...(dt.data || []).map((x) => ({
+        id: x.id,
+        source: "DataSub transaction",
+        reference: x.reference,
+        product: "datasub",
+        description: x.service_type,
+        amount: Number(x.amount),
+        direction: "credit" as const,
+        status: String(x.status),
+        created_at: x.created_at,
+        classification: "company" as const,
+      })),
+      ...(wf.data || []).map((x) => ({
+        id: x.id,
+        source: "Wallet funding",
+        reference: x.payment_reference,
+        product: "datasub",
+        description: "Customer wallet deposit",
+        amount: Number(x.amount),
+        direction: "credit" as const,
+        status: String(x.status),
+        created_at: x.created_at,
+        classification: "customer_funds" as const,
+      })),
+      ...(dc.data || []).map((x) => ({
+        id: x.id,
+        source: "Reseller commission",
+        reference: `COM-${x.id.slice(0, 8)}`,
+        product: "datasub",
+        description: `${x.tier_code} reseller commission`,
+        amount: Number(x.commission_amount),
+        direction: "debit" as const,
+        status: "posted",
+        created_at: x.created_at,
+        classification: "company" as const,
+      })),
+      ...(sp.data || []).map((x) => ({
+        id: x.id,
+        source: "School fee",
+        reference: x.reference,
+        product: "schoolpro",
+        description: `School collection · ${x.method}`,
+        amount: Number(x.amount),
+        direction: "credit" as const,
+        status: "paid",
+        created_at: x.paid_at || x.created_at,
+        classification: "school_collection" as const,
+      })),
+      ...(si.data || []).map((x) => ({
+        id: x.id,
+        source: "School fee intent",
+        reference: x.reference,
+        product: "schoolpro",
+        description: `School checkout · ${x.gateway}`,
+        amount: Number(x.amount),
+        direction: "credit" as const,
+        status: x.status,
+        created_at: x.created_at,
+        classification: "school_collection" as const,
+      })),
+      ...(ho.data || []).map((x) => ({
+        id: x.id,
+        source: "Host order",
+        reference: x.order_number,
+        product: "host",
+        description: x.domain_name || x.order_type,
+        amount: Number(x.amount),
+        direction: "credit" as const,
+        status: x.status,
+        created_at: x.created_at,
+        classification: "company" as const,
+      })),
+      ...(bp.data || []).map((x) => ({id:x.id,source:"Business payment",reference:`BIZPAY-${x.id.slice(0,8)}`,product:"business_centre",description:"Business & Innovation payment",amount:Number(x.amount),direction:"credit" as const,status:x.status,created_at:x.paid_at||x.created_at,classification:"company" as const})),
+      ...(bi.data || []).map((x) => ({id:x.id,source:"Business invoice",reference:x.invoice_number,product:"business_centre",description:"Business & Innovation invoice",amount:Number(x.amount),direction:"credit" as const,status:x.status,created_at:x.created_at,classification:"company" as const})),
+      ...(cp.data || []).map((x) => ({
+        id: x.id,
+        source: "Consult payment",
+        reference: x.payment_reference,
+        product: "consult",
+        description: x.description,
+        amount: Number(x.amount),
+        direction: "credit" as const,
+        status: x.status,
+        created_at: x.paid_at || x.created_at,
+        classification: "company" as const,
+      })),
+      ...(le.data || []).map((x) => ({
+        id: x.id,
+        source: `Ledger ${x.entry_type}`,
+        reference: x.reference,
+        product: x.product,
+        description: x.description,
+        amount: Number(x.amount),
+        direction: x.direction as "credit" | "debit",
+        status: x.status,
+        created_at: x.occurred_at,
+        classification: "company" as const,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    setRows(combined);
+    setLedger(
+      (le.data || []).map(
+        (x) => ({ ...x, amount: Number(x.amount) }) as Ledger,
+      ),
+    );
+    setRefunds(
+      (rr.data || []).map(
+        (x) => ({ ...x, amount: Number(x.amount) }) as Refund,
+      ),
+    );
+    setNotice(
+      dt.error?.message ||
+        wf.error?.message ||
+        dc.error?.message ||
+        sp.error?.message ||
+        si.error?.message ||
+        ho.error?.message ||
+        cp.error?.message || bp.error?.message || bi.error?.message ||
+        le.error?.message ||
+        rr.error?.message ||
+        "",
+    );
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const visible = useMemo(
+    () => rows.filter((r) => filter === "all" || r.product === filter),
+    [rows, filter],
+  );
+  const companyGross = rows
+    .filter(
+      (r) =>
+        r.classification === "company" &&
+        r.direction === "credit" &&
+        ok(r.status),
+    )
+    .reduce((n, r) => n + r.amount, 0);
+  const companyDebits =
+    rows
+      .filter(
+        (r) =>
+          r.classification === "company" &&
+          r.direction === "debit" &&
+          ok(r.status),
+      )
+      .reduce((n, r) => n + r.amount, 0) +
+    refunds
+      .filter((r) => r.status === "processed")
+      .reduce((n, r) => n + r.amount, 0);
+  const pendingAmount = rows
+    .filter((r) => r.classification === "company" && pending(r.status))
+    .reduce((n, r) => n + r.amount, 0);
+  const schoolVolume = rows
+    .filter((r) => r.classification === "school_collection" && ok(r.status))
+    .reduce((n, r) => n + r.amount, 0);
+
+  async function addEntry() {
+    if (
+      !supabase ||
+      !profile ||
+      !entry.description ||
+      Number(entry.amount) <= 0
+    )
+      return;
+    setBusy(true);
+    const payload = {
+      ...entry,
+      amount: Number(entry.amount),
+      created_by: profile.id,
+      status: "pending",
+      ...(entry.reference ? {} : { reference: undefined }),
+    };
+    const { error } = await supabase
+      .from("finance_ledger_entries")
+      .insert(payload);
+    setBusy(false);
+    setNotice(error?.message || "Finance entry submitted for approval.");
+    if (!error) {
+      setEntry({ ...entry, reference: "", description: "", amount: "" });
+      await load();
+    }
+  }
+  async function addRefund() {
+    if (
+      !supabase ||
+      !profile ||
+      !refund.source_reference ||
+      !refund.reason ||
+      Number(refund.amount) <= 0
+    )
+      return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("finance_refund_requests")
+      .insert({
+        ...refund,
+        amount: Number(refund.amount),
+        requested_by: profile.id,
+        status: "requested",
+      });
+    setBusy(false);
+    setNotice(error?.message || "Refund request created for approval.");
+    if (!error) {
+      setRefund({ ...refund, source_reference: "", amount: "", reason: "" });
+      await load();
+    }
+  }
+  async function updateLedger(id: string, status: string) {
+    if (!supabase || !profile) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("finance_ledger_entries")
+      .update({
+        status,
+        approved_by: profile.id,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    setBusy(false);
+    setNotice(error?.message || `Ledger entry ${status}.`);
+    await load();
+  }
+  async function updateRefund(id: string, status: string) {
+    if (!supabase || !profile) return;
+    setBusy(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("finance_refund_requests")
+      .update({
+        status,
+        reviewed_by: profile.id,
+        reviewed_at: now,
+        processed_at: status === "processed" ? now : null,
+        updated_at: now,
+      })
+      .eq("id", id);
+    setBusy(false);
+    setNotice(error?.message || `Refund ${status}.`);
+    await load();
+  }
+  function exportCsv() {
+    const header = [
+      "Reference",
+      "Platform",
+      "Source",
+      "Description",
+      "Amount",
+      "Direction",
+      "Status",
+      "Date",
+    ];
+    const data = visible.map((r) => [
+      r.reference,
+      r.product,
+      r.source,
+      r.description,
+      r.amount,
+      r.direction,
+      r.status,
+      r.created_at,
+    ]);
+    const csv = [header, ...data]
+      .map((line) =>
+        line.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+      )
+      .join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ihlink-finance-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <ModulePage
+      product="corporate"
+      sections={adminSections}
+      title="Finance & Billing"
+      eyebrow="Central Administration"
+      description="Monitor real cross-platform payment activity while separating IHLink revenue, customer wallet funds and school-owned fee collections."
+      userName={profile?.first_name || "Administrator"}
+      userRole="Finance Administrator"
+      primaryAction="Live Finance Control"
+      metrics={[
+        { label: "Company gross inflow", value: money(companyGross) },
+        { label: "Company debits", value: money(companyDebits) },
+        { label: "Pending company flow", value: money(pendingAmount) },
+        { label: "School collections", value: money(schoolVolume) },
+      ]}
+    >
+      {notice && (
+        <div className="rounded-xl border bg-white p-3 text-sm">{notice}</div>
+      )}
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {[
+              "all",
+              "datasub",
+              "schoolpro",
+              "consult",
+              "host",
+              "engineering",
+              "business_centre",
+              "print",
+              "fabrication",
+              "compute",
+              "academy",
+              "digital_business",
+              "corporate",
+            ].map((v) => (
+              <Button
+                key={v}
+                size="sm"
+                variant={filter === v ? "primary" : "secondary"}
+                onClick={() => setFilter(v)}
+              >
+                {v}
+              </Button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              onClick={() => void load()}
+            >
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<Download className="h-4 w-4" />}
+              onClick={exportCsv}
+            >
+              Export CSV
+            </Button>
+          </div>
+        </div>
+      </Card>
+      <Card padding="none" className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1000px] text-left text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                {[
+                  "Reference",
+                  "Platform / source",
+                  "Description",
+                  "Amount",
+                  "Classification",
+                  "Status",
+                  "Date",
+                ].map((h) => (
+                  <th key={h} className="p-4 text-xs uppercase text-muted">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((r) => (
+                <tr key={`${r.source}-${r.id}`} className="border-t">
+                  <td className="p-4 font-semibold">{r.reference}</td>
+                  <td className="p-4 capitalize">
+                    {r.product}
+                    <p className="text-xs text-muted">{r.source}</p>
+                  </td>
+                  <td className="p-4">{r.description}</td>
+                  <td
+                    className={`p-4 font-bold ${r.direction === "debit" ? "text-rose-600" : "text-emerald-700"}`}
+                  >
+                    {r.direction === "debit" ? "−" : "+"}
+                    {money(r.amount)}
+                  </td>
+                  <td className="p-4">
+                    {badge(
+                      r.classification.replaceAll("_", " "),
+                      r.classification === "company" ? "blue" : "amber",
+                    )}
+                  </td>
+                  <td className="p-4">
+                    {badge(
+                      r.status,
+                      ok(r.status)
+                        ? "green"
+                        : pending(r.status)
+                          ? "amber"
+                          : "red",
+                    )}
+                  </td>
+                  <td className="p-4 text-muted">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+              {!visible.length && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-muted">
+                    No finance records in this view.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <h3 className="font-bold">Manual ledger entry</h3>
+          <p className="mt-1 text-xs text-muted">
+            For Corporate, DataSub, SchoolPro, Consult, Hosting, Engineering and every Business & Innovation unit when an entry is not generated automatically by another module.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <select
+              className={input}
+              value={entry.product}
+              onChange={(e) => setEntry({ ...entry, product: e.target.value })}
+            >
+              {[
+                "corporate",
+                "datasub",
+                "schoolpro",
+                "consult",
+                "host",
+                "engineering",
+                "business_centre",
+                "print",
+                "fabrication",
+                "compute",
+                "academy",
+                "digital_business",
+              ].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+            <select
+              className={input}
+              value={entry.direction}
+              onChange={(e) =>
+                setEntry({ ...entry, direction: e.target.value })
+              }
+            >
+              <option value="credit">Credit / inflow</option>
+              <option value="debit">Debit / outflow</option>
+            </select>
+            <select
+              className={input}
+              value={entry.entry_type}
+              onChange={(e) =>
+                setEntry({ ...entry, entry_type: e.target.value })
+              }
+            >
+              <option value="revenue">Revenue</option>
+              <option value="expense">Expense</option>
+              <option value="settlement">Settlement</option>
+              <option value="adjustment">Adjustment</option>
+            </select>
+            <input
+              className={input}
+              placeholder="External reference (optional)"
+              value={entry.reference}
+              onChange={(e) =>
+                setEntry({ ...entry, reference: e.target.value })
+              }
+            />
+            <input
+              type="number"
+              min="1"
+              className={input}
+              placeholder="Amount"
+              value={entry.amount}
+              onChange={(e) => setEntry({ ...entry, amount: e.target.value })}
+            />
+            <input
+              className={input}
+              placeholder="Description"
+              value={entry.description}
+              onChange={(e) =>
+                setEntry({ ...entry, description: e.target.value })
+              }
+            />
+          </div>
+          <Button
+            className="mt-4"
+            disabled={busy}
+            onClick={() => void addEntry()}
+          >
+            Submit for approval
+          </Button>
+        </Card>
+        <Card>
+          <h3 className="font-bold">Create refund request</h3>
+          <p className="mt-1 text-xs text-muted">
+            Refunds remain pending until a finance approver reviews them.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <select
+              className={input}
+              value={refund.product}
+              onChange={(e) =>
+                setRefund({ ...refund, product: e.target.value })
+              }
+            >
+              {[
+                "corporate",
+                "datasub",
+                "schoolpro",
+                "consult",
+                "host",
+                "engineering",
+                "business_centre",
+                "print",
+                "fabrication",
+                "compute",
+                "academy",
+                "digital_business",
+              ].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+            <input
+              className={input}
+              placeholder="Original payment reference"
+              value={refund.source_reference}
+              onChange={(e) =>
+                setRefund({ ...refund, source_reference: e.target.value })
+              }
+            />
+            <input
+              type="number"
+              min="1"
+              className={input}
+              placeholder="Refund amount"
+              value={refund.amount}
+              onChange={(e) => setRefund({ ...refund, amount: e.target.value })}
+            />
+            <input
+              className={input}
+              placeholder="Reason"
+              value={refund.reason}
+              onChange={(e) => setRefund({ ...refund, reason: e.target.value })}
+            />
+          </div>
+          <Button
+            className="mt-4"
+            disabled={busy}
+            onClick={() => void addRefund()}
+          >
+            Create refund request
+          </Button>
+        </Card>
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <h3 className="font-bold">Pending ledger approvals</h3>
+          <div className="mt-4 divide-y">
+            {ledger
+              .filter((x) =>
+                ["draft", "pending", "approved"].includes(x.status),
+              )
+              .map((x) => (
+                <div key={x.id} className="py-4">
+                  <div className="flex justify-between gap-3">
+                    <div>
+                      <b>{x.description}</b>
+                      <p className="text-xs text-muted">
+                        {x.reference} · {x.product} · {x.entry_type}
+                      </p>
+                    </div>
+                    <b>{money(x.amount)}</b>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => void updateLedger(x.id, "approved")}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => void updateLedger(x.id, "posted")}
+                    >
+                      Post
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={busy}
+                      onClick={() => void updateLedger(x.id, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            {!ledger.some((x) =>
+              ["draft", "pending", "approved"].includes(x.status),
+            ) && (
+              <p className="py-5 text-sm text-muted">
+                No ledger approvals pending.
+              </p>
+            )}
+          </div>
+        </Card>
+        <Card>
+          <h3 className="font-bold">Refund workflow</h3>
+          <div className="mt-4 divide-y">
+            {refunds.map((x) => (
+              <div key={x.id} className="py-4">
+                <div className="flex justify-between gap-3">
+                  <div>
+                    <b>{x.refund_number}</b>
+                    <p className="text-xs text-muted">
+                      {x.product} · {x.source_reference} · {x.reason}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <b>{money(x.amount)}</b>
+                    <div>
+                      {badge(
+                        x.status,
+                        x.status === "processed"
+                          ? "green"
+                          : x.status === "rejected"
+                            ? "red"
+                            : "amber",
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {!["processed", "rejected"].includes(x.status) && (
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={busy}
+                      onClick={() => void updateRefund(x.id, "approved")}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => void updateRefund(x.id, "processed")}
+                    >
+                      Mark processed
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={busy}
+                      onClick={() => void updateRefund(x.id, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {!refunds.length && (
+              <p className="py-5 text-sm text-muted">No refund requests.</p>
+            )}
+          </div>
+        </Card>
+      </div>
+    </ModulePage>
+  );
+}
