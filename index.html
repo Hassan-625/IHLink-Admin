@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logos/ihlink-master.svg?v=20260923-consistent" />
+    <link rel="apple-touch-icon" href="/logos/ihlink-master.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071A3D" />
+    <meta name="description" content="IHLink Co. Ltd. — digital services, education technology, software, hosting and engineering solutions." />
+    <title data-default>IHLink Co. Ltd. | Connected Technology Solutions</title>
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root">
+      <main id="ihlink-boot-status" style="min-height:100vh;padding:32px;font-family:system-ui,sans-serif;background:#fff;color:#071A3D">
+        <h1 style="font-size:24px;font-weight:800">IHLink is loading…</h1>
+        <p style="margin-top:12px">The application shell loaded. The website is starting.</p>
+      </main>
+    </div>
+    <script>
+      (function () {
+        function showBootError(message) {
+          var root = document.getElementById('root');
+          if (!root) return;
+          root.innerHTML =
+            '<main style="min-height:100vh;padding:32px;font-family:system-ui,sans-serif;background:#fff;color:#071A3D">' +
+            '<h1 style="font-size:24px;font-weight:800">IHLink startup diagnostic</h1>' +
+            '<p style="margin-top:12px">The HTML page loaded, but the application JavaScript did not start correctly.</p>' +
+            '<pre style="margin-top:20px;padding:16px;overflow:auto;white-space:pre-wrap;background:#f1f5f9;border-radius:12px">' +
+            String(message).replace(/[&<>\"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]; }) +
+            '</pre></main>';
+        }
+        window.addEventListener('error', function (event) {
+          showBootError(event.message || 'Unknown browser startup error');
+        });
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason;
+          showBootError(reason && reason.message ? reason.message : String(reason || 'Unhandled promise rejection'));
+        });
+        window.__IHLINK_SHOW_BOOT_ERROR__ = showBootError;
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
