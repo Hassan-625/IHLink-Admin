@@ -1,0 +1,11 @@
+import { useState } from 'react';
+interface ServiceLogoProps { name: string; size?: 'sm'|'md'|'lg'; showLabel?: boolean; className?: string }
+const sizes={sm:'w-8 h-8 text-[8px]',md:'w-12 h-12 text-[10px]',lg:'w-16 h-16 text-xs'};
+export function ServiceLogo({name,size='md',showLabel=false,className=''}:ServiceLogoProps){
+ const [failed,setFailed]=useState(false);const key=name.toLowerCase().replace(/[^a-z0-9]/g,'');
+ const assetMap:Record<string,string>={mtn:'mtn.png',airtel:'airtel.png',glo:'glo.png',t2:'t2.png',dstv:'dstv.png',gotv:'gotv.png',startimes:'startimes.png',waec:'waec.png',neco:'neco.png',jamb:'jamb.png',nabteb:'nabteb.png',abedc:'aba-electric.png',aple:'aba-electric.png',aedc:'abuja-electric.png',bedc:'benin-electric.png',ekedc:'ekedc.png',eedc:'enugu-electric.png',ibedc:'ibadan-electric.png',ikedc:'ikeja-electric.png',jed:'jos-electric.png',jedc:'jos-electric.png',kaedco:'kaduna-electric.png',kedco:'kano-electric.png',phed:'portharcourt-electric.png',yedc:'yola-electric.png',yed:'yola-electric.png',phedc:'portharcourt-electric.png',kaedc:'kaduna-electric.png'};
+ const normalized=['mtn','airtel','glo','t2','dstv','gotv','startimes','waec','neco','jamb','nabteb'].find(x=>key.startsWith(x))||key;const asset=assetMap[normalized];
+ const fallback=<div className="w-full h-full rounded-xl bg-slate-100 border border-slate-200 grid place-items-center text-navy-900 font-black"><span className="max-w-full truncate px-1">{name.toUpperCase()}</span></div>;
+ const mark=asset&&!failed?<div className="w-full h-full rounded-xl bg-white border border-slate-200 p-1.5 grid place-items-center overflow-hidden"><img src={`/brands/${asset}`} alt={`${name} logo`} onError={()=>setFailed(true)} className="w-full h-full object-contain" loading="lazy"/></div>:fallback;
+ return <div className={`inline-flex items-center ${showLabel?'gap-2':''} ${className}`} aria-label={`${name} logo`}><div className={`${sizes[size]} shrink-0`}>{mark}</div>{showLabel&&<span className="font-bold text-ink">{name}</span>}</div>;
+}
