@@ -1,4 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import {useAuth} from '@/context/AuthContext';
+import {canOpenAdminPath} from '@/lib/adminNavigationPermissions';
+import {AuthHandoffPage} from '@/pages/auth/AuthHandoffPage';
+import {AdminPrintPage} from '@/pages/admin/AdminPrintPage';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { AdminLogin } from '@/pages/admin/AdminLogin';
@@ -23,10 +27,12 @@ import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
 function Guard({children,product,superOnly=false,permission="view"}:{children:ReactNode;product?:ProductKey;superOnly?:boolean;permission?:"view"|"edit"}) {
+  const {profile,adminAccess,loading}=useAuth();const {pathname}=useLocation();
+  if(!loading&&profile&&!canOpenAdminPath(pathname,profile,adminAccess))return <Navigate to="/admin/access-denied" replace/>;
   return <ProtectedRoute roles={superOnly?['super_admin']:[...adminRoles]} product={product} permission={permission}>{children}</ProtectedRoute>;
 }
 const module = (name:string) => <Guard><AdminModulePage module={name}/></Guard>;
-export default function App(){return <Routes>
+export default function App(){return <Routes><Route path="/auth/handoff" element={<AuthHandoffPage/>}/>
   <Route path="/" element={<Navigate to="/admin" replace/>}/>
   <Route path="/signin" element={<AdminLogin/>}/>
   <Route path="/admin/login" element={<AdminLogin/>}/>
@@ -40,7 +46,7 @@ export default function App(){return <Routes>
   <Route path="/admin/engineering" element={<Guard product="engineering"><AdminEngineeringPage/></Guard>}/>
   <Route path="/admin/host" element={<Guard product="host"><AdminHostPage/></Guard>}/>
   <Route path="/admin/business-centre" element={<Guard product="business_centre" permission="edit"><AdminBusinessPage unit="business_centre"/></Guard>}/>
-  <Route path="/admin/print" element={<Guard product="print" permission="edit"><AdminBusinessPage unit="print"/></Guard>}/>
+  <Route path="/admin/print" element={<Guard product="print"><AdminPrintPage/></Guard>}/>
   <Route path="/admin/fabrication" element={<Guard product="fabrication" permission="edit"><AdminBusinessPage unit="fabrication"/></Guard>}/>
   <Route path="/admin/compute" element={<Guard product="compute" permission="edit"><AdminBusinessPage unit="compute"/></Guard>}/>
   <Route path="/admin/academy" element={<Guard product="academy" permission="edit"><AdminBusinessPage unit="academy"/></Guard>}/>
