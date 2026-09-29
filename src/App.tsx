@@ -22,8 +22,8 @@ import { AdminStatePage } from '@/pages/admin/AdminStatePage';
 import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
-function Guard({children,product,superOnly=false}:{children:ReactNode;product?:ProductKey;superOnly?:boolean}) {
-  return <ProtectedRoute roles={superOnly?['super_admin']:[...adminRoles]} product={product}>{children}</ProtectedRoute>;
+function Guard({children,product,superOnly=false,permission="view"}:{children:ReactNode;product?:ProductKey;superOnly?:boolean;permission?:"view"|"edit"}) {
+  return <ProtectedRoute roles={superOnly?['super_admin']:[...adminRoles]} product={product} permission={permission}>{children}</ProtectedRoute>;
 }
 const module = (name:string) => <Guard><AdminModulePage module={name}/></Guard>;
 export default function App(){return <Routes>
@@ -39,12 +39,12 @@ export default function App(){return <Routes>
   <Route path="/admin/consult" element={<Guard product="consult"><AdminConsultPage/></Guard>}/>
   <Route path="/admin/engineering" element={<Guard product="engineering"><AdminEngineeringPage/></Guard>}/>
   <Route path="/admin/host" element={<Guard product="host"><AdminHostPage/></Guard>}/>
-  <Route path="/admin/business-centre" element={<Guard product="business_centre"><AdminBusinessPage unit="business_centre"/></Guard>}/>
-  <Route path="/admin/print" element={<Guard product="print"><AdminBusinessPage unit="print"/></Guard>}/>
-  <Route path="/admin/fabrication" element={<Guard product="fabrication"><AdminBusinessPage unit="fabrication"/></Guard>}/>
-  <Route path="/admin/compute" element={<Guard product="compute"><AdminBusinessPage unit="compute"/></Guard>}/>
-  <Route path="/admin/academy" element={<Guard product="academy"><AdminBusinessPage unit="academy"/></Guard>}/>
-  <Route path="/admin/digital-business" element={<Guard product="digital_business"><AdminBusinessPage unit="digital_business"/></Guard>}/>
+  <Route path="/admin/business-centre" element={<Guard product="business_centre" permission="edit"><AdminBusinessPage unit="business_centre"/></Guard>}/>
+  <Route path="/admin/print" element={<Guard product="print" permission="edit"><AdminBusinessPage unit="print"/></Guard>}/>
+  <Route path="/admin/fabrication" element={<Guard product="fabrication" permission="edit"><AdminBusinessPage unit="fabrication"/></Guard>}/>
+  <Route path="/admin/compute" element={<Guard product="compute" permission="edit"><AdminBusinessPage unit="compute"/></Guard>}/>
+  <Route path="/admin/academy" element={<Guard product="academy" permission="edit"><AdminBusinessPage unit="academy"/></Guard>}/>
+  <Route path="/admin/digital-business" element={<Guard product="digital_business" permission="edit"><AdminBusinessPage unit="digital_business"/></Guard>}/>
   <Route path="/admin/finance" element={<Guard><AdminFinancePage/></Guard>}/>
   <Route path="/admin/support" element={<Guard><AdminSupportPage/></Guard>}/>
   <Route path="/admin/notifications" element={<Guard><AdminNotificationsPage/></Guard>}/>
