@@ -29,7 +29,7 @@ export function Logo({ product = 'corporate', variant = 'full', size = 'md', dis
 
   const content = <>
       <div className={`${s.box} rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-sm ring-1 ring-slate-900/5 flex items-center justify-center shrink-0 overflow-hidden transition-all group-hover:scale-105 group-hover:shadow-md`}>
-        <img src="/brand/ihlink-icon.png?v=20260928-logo3" alt="IHLink" className="w-full h-full object-contain" />
+        <img src="/brand/ihlink-icon.png?v=20260928-valid-logo4" alt="IHLink" className="w-full h-full object-contain" />
       </div>
       {variant !== 'icon' && (
         <div className="flex flex-col leading-none">
