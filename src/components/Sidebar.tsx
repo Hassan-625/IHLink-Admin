@@ -1,3 +1,4 @@
+import {canOpenAdminPath} from '@/lib/adminNavigationPermissions';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, Settings, Bell, Search } from 'lucide-react';
@@ -31,7 +32,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({
   product,
-  sections,
+  sections: providedSections,
   children,
   userName,
   userRole,
@@ -46,7 +47,8 @@ export function DashboardLayout({
   const [profileOpen, setProfileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, adminAccess } = useAuth();
+  const sections=providedSections.map(section=>({...section,items:section.items.filter(item=>canOpenAdminPath(item.href,profile,adminAccess))})).filter(section=>section.items.length);
   const roleKey = String(profile?.role || '');
   const canSeeAdministration = ['super_admin', 'platform_admin', 'content_admin'].includes(roleKey);
   const searchableItems = sections.flatMap((section) => section.items).filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
