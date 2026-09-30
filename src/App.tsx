@@ -45,12 +45,12 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/consult" element={<Guard product="consult"><AdminConsultPage/></Guard>}/>
   <Route path="/admin/engineering" element={<Guard product="engineering"><AdminEngineeringPage/></Guard>}/>
   <Route path="/admin/host" element={<Guard product="host"><AdminHostPage/></Guard>}/>
-  <Route path="/admin/business-centre" element={<Guard product="business_centre" permission="edit"><AdminBusinessPage unit="business_centre"/></Guard>}/>
+  <Route path="/admin/business-centre" element={<Guard product="business_centre"><AdminBusinessPage unit="business_centre"/></Guard>}/>
   <Route path="/admin/print" element={<Guard product="print"><AdminPrintPage/></Guard>}/>
-  <Route path="/admin/fabrication" element={<Guard product="fabrication" permission="edit"><AdminBusinessPage unit="fabrication"/></Guard>}/>
-  <Route path="/admin/compute" element={<Guard product="compute" permission="edit"><AdminBusinessPage unit="compute"/></Guard>}/>
-  <Route path="/admin/academy" element={<Guard product="academy" permission="edit"><AdminBusinessPage unit="academy"/></Guard>}/>
-  <Route path="/admin/digital-business" element={<Guard product="digital_business" permission="edit"><AdminBusinessPage unit="digital_business"/></Guard>}/>
+  <Route path="/admin/fabrication" element={<Guard product="fabrication"><AdminBusinessPage unit="fabrication"/></Guard>}/>
+  <Route path="/admin/compute" element={<Guard product="compute"><AdminBusinessPage unit="compute"/></Guard>}/>
+  <Route path="/admin/academy" element={<Guard product="academy"><AdminBusinessPage unit="academy"/></Guard>}/>
+  <Route path="/admin/digital-business" element={<Guard product="digital_business"><AdminBusinessPage unit="digital_business"/></Guard>}/>
   <Route path="/admin/finance" element={<Guard><AdminFinancePage/></Guard>}/>
   <Route path="/admin/support" element={<Guard><AdminSupportPage/></Guard>}/>
   <Route path="/admin/notifications" element={<Guard><AdminNotificationsPage/></Guard>}/>
