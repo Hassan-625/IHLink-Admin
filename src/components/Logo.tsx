@@ -33,14 +33,14 @@ export function Logo({ product = 'corporate', variant = 'full', size = 'md', dis
       </div>
       {variant !== 'icon' && (
         <div className="flex flex-col leading-none">
-          <span className={`${s.text} font-extrabold text-ink tracking-tight`}>
+          <span className={`${s.text} font-extrabold ${variant === 'light' ? 'text-white' : 'text-ink'} tracking-tight`}>
             {product === 'corporate' ? 'IHLink' : name}
           </span>
           {product !== 'corporate' && (
-            <span className={`${s.sub} text-muted font-medium`}>by IHLink</span>
+            <span className={`${s.sub} ${variant === 'light' ? 'text-blue-100' : 'text-muted'} font-medium`}>by IHLink</span>
           )}
-          {product === 'corporate' && variant === 'full' && (
-            <span className={`${s.sub} text-muted font-medium`}>Co. Ltd.</span>
+          {product === 'corporate' && (
+            <span className={`${s.sub} ${variant === 'light' ? 'text-blue-100' : 'text-muted'} font-medium`}>Co. Ltd.</span>
           )}
         </div>
       )}
