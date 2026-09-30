@@ -17,7 +17,7 @@ type Row = {
   direction: "credit" | "debit";
   status: string;
   created_at: string;
-  classification: "company" | "customer_funds" | "school_collection";
+  classification: "company" | "customer_funds" | "school_collection" | "receivable";
 };
 type Ledger = {
   id: string;
@@ -70,6 +70,7 @@ const pending = (status: string) =>
     "draft",
   ].includes(status.toLowerCase());
 
+const businessUnit=(row:any)=>{const invoice=Array.isArray(row.business_invoices)?row.business_invoices[0]:row.business_invoices;const relation=row.business_orders||invoice?.business_orders;const order=Array.isArray(relation)?relation[0]:relation;return order?.unit_code||'business_centre';};
 export function AdminFinancePage() {
   const { profile } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
@@ -135,8 +136,8 @@ export function AdminFinancePage() {
         )
         .order("created_at", { ascending: false })
         .limit(100),
-      supabase.from("business_payments").select("id,amount,status,paid_at,created_at,invoice_id").order("created_at",{ascending:false}).limit(100),
-      supabase.from("business_invoices").select("id,invoice_number,amount,status,created_at,order_id").order("created_at",{ascending:false}).limit(100),
+      supabase.from("business_payments").select("id,amount,status,paid_at,created_at,invoice_id,provider_reference,business_invoices!inner(business_orders!inner(unit_code))").order("created_at",{ascending:false}).limit(100),
+      supabase.from("business_invoices").select("id,invoice_number,amount,status,created_at,order_id,business_orders!inner(unit_code)").order("created_at",{ascending:false}).limit(100),
       supabase
         .from("finance_ledger_entries")
         .select(
@@ -225,8 +226,8 @@ export function AdminFinancePage() {
         created_at: x.created_at,
         classification: "company" as const,
       })),
-      ...(bp.data || []).map((x) => ({id:x.id,source:"Business payment",reference:`BIZPAY-${x.id.slice(0,8)}`,product:"business_centre",description:"Business & Innovation payment",amount:Number(x.amount),direction:"credit" as const,status:x.status,created_at:x.paid_at||x.created_at,classification:"company" as const})),
-      ...(bi.data || []).map((x) => ({id:x.id,source:"Business invoice",reference:x.invoice_number,product:"business_centre",description:"Business & Innovation invoice",amount:Number(x.amount),direction:"credit" as const,status:x.status,created_at:x.created_at,classification:"company" as const})),
+      ...(bp.data || []).map((x) => ({id:x.id,source:"Business payment",reference:x.provider_reference||`BIZPAY-${x.id.slice(0,8)}`,product:businessUnit(x),description:"Business & Innovation payment",amount:Number(x.amount),direction:"credit" as const,status:x.status,created_at:x.paid_at||x.created_at,classification:"company" as const})),
+      ...(bi.data || []).map((x) => ({id:x.id,source:"Business invoice",reference:x.invoice_number,product:businessUnit(x),description:"Invoice document (not an additional payment)",amount:Number(x.amount),direction:"credit" as const,status:x.status,created_at:x.created_at,classification:"receivable" as const})),
       ...(cp.data || []).map((x) => ({
         id: x.id,
         source: "Consult payment",
@@ -308,7 +309,7 @@ export function AdminFinancePage() {
       .filter((r) => r.status === "processed")
       .reduce((n, r) => n + r.amount, 0);
   const pendingAmount = rows
-    .filter((r) => r.classification === "company" && pending(r.status))
+    .filter((r) => ["company","receivable"].includes(r.classification) && pending(r.status))
     .reduce((n, r) => n + r.amount, 0);
   const schoolVolume = rows
     .filter((r) => r.classification === "school_collection" && ok(r.status))
@@ -464,6 +465,7 @@ export function AdminFinancePage() {
               "host",
               "engineering",
               "business_centre",
+              "fabrication", "compute", "academy", "digital_business",
               "print",
               "fabrication",
               "compute",
@@ -588,6 +590,7 @@ export function AdminFinancePage() {
                 "host",
                 "engineering",
                 "business_centre",
+              "fabrication", "compute", "academy", "digital_business",
                 "print",
                 "fabrication",
                 "compute",
@@ -673,6 +676,7 @@ export function AdminFinancePage() {
                 "host",
                 "engineering",
                 "business_centre",
+              "fabrication", "compute", "academy", "digital_business",
                 "print",
                 "fabrication",
                 "compute",

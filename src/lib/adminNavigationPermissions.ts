@@ -11,6 +11,6 @@ export function canOpenAdminPath(path:string,profile:UserProfile|null,grants:Adm
  if(module==='support')return profile.role==='support';
  const product=products[module];if(!product)return false;
  const grant=grants.find(item=>item.product===product);
- if(['business-centre','fabrication','compute','academy','digital-business'].includes(module))return Boolean(grant?.can_edit);
+ 
  return Boolean(grant?.can_view);
 }
