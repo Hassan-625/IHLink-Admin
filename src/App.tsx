@@ -27,6 +27,7 @@ import { AdminStatePage } from '@/pages/admin/AdminStatePage';
 import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManagementPage';
 import { AdminLivePage } from '@/pages/admin/AdminLivePage';
 import { AdminOperationalDirectoryPage } from '@/pages/admin/AdminOperationalDirectoryPage';
+import { AdminSchoolProSubscriptions } from '@/pages/admin/AdminSchoolProSubscriptions';
 import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
@@ -69,7 +70,11 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/pricing" element={<Guard superOnly><AdminOperationalDirectoryPage mode="pricing"/></Guard>}/>
   <Route path="/admin/audit-logs" element={<Guard superOnly><AdminOperationalDirectoryPage mode="audit-logs"/></Guard>}/>
   <Route path="/admin/settings" element={<Guard superOnly><AdminOperationalDirectoryPage mode="settings"/></Guard>}/>
-  {['subscriptions','leads','projects','payments','schools'].map(name=><Route key={name} path={`/admin/${name}`} element={module(name)}/>)}
+  <Route path="/admin/subscriptions" element={<Guard superOnly><AdminSchoolProSubscriptions/></Guard>}/>
+  <Route path="/admin/schools" element={<Guard><AdminModulePage module="schoolpro"/></Guard>}/>
+  <Route path="/admin/payments" element={<Guard><AdminModulePage module="finance"/></Guard>}/>
+  <Route path="/admin/projects" element={<Guard><AdminModulePage module="products"/></Guard>}/>
+  <Route path="/admin/leads" element={<Navigate to="/admin/customers" replace/>}/>
   <Route path="/admin/access-denied" element={<AdminStatePage state="access"/>}/>
   <Route path="/admin/session-expired" element={<AdminStatePage state="session"/>}/>
   <Route path="/admin/system-error" element={<AdminStatePage state="error"/>}/>
