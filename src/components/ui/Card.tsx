@@ -18,7 +18,7 @@ export function Card({ children, hover = false, padding = 'md', className = '', 
   const hasCustomBorder = /(?:^|\s)!?border-(?:0|transparent|\[[^\]]+\]|(?:[a-z]+-)?\d{2,3})(?:\s|$)/.test(className);
   return (
     <div
-      className={`${hasCustomBackground ? '' : 'bg-white'} rounded-xl border ${hasCustomBorder ? '' : 'border-border'} shadow-card ${paddingClasses[padding]} ${hover ? 'transition-all duration-200 hover:shadow-float hover:-translate-y-0.5' : ''} ${className}`}
+      className={`${hasCustomBackground ? '' : 'bg-white'} rounded-2xl border ${hasCustomBorder ? '' : 'border-border'} shadow-sm ${paddingClasses[padding]} ${hover ? 'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5' : ''} ${className}`}
       {...props}
     >
       {children}
