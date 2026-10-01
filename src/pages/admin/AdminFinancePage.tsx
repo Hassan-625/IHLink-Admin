@@ -30,6 +30,7 @@ type Ledger = {
   status: string;
   occurred_at: string;
 };
+type Bank={id:string;label:string;bank_name:string;account_name:string;account_number:string;is_active:boolean;is_default:boolean};type DirectTransfer={id:string;platform_code:string;source_reference:string;amount:number;sender_name:string;sender_bank:string|null;customer_reference:string;status:string;created_at:string};
 type Refund = {
   id: string;
   refund_number: string;
@@ -75,7 +76,7 @@ export function AdminFinancePage() {
   const { profile } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [ledger, setLedger] = useState<Ledger[]>([]);
-  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [refunds, setRefunds] = useState<Refund[]>([]); const[banks,setBanks]=useState<Bank[]>([]);const[transfers,setTransfers]=useState<DirectTransfer[]>([]);const[bank,setBank]=useState({label:"IHLink Main Account",bank_name:"",account_name:"",account_number:""});
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -96,7 +97,7 @@ export function AdminFinancePage() {
 
   const load = useCallback(async () => {
     if (!supabase) return;
-    const [dt, wf, dc, sp, si, ho, cp, bp, bi, le, rr] = await Promise.all([
+    const [dt, wf, dc, sp, si, ho, cp, bp, bi, le, rr,ba,tr] = await Promise.all([
       supabase
         .from("datasub_transactions")
         .select("id,reference,service_type,amount,status,created_at")
@@ -151,7 +152,7 @@ export function AdminFinancePage() {
           "id,refund_number,product,source_reference,amount,reason,status,created_at",
         )
         .order("created_at", { ascending: false })
-        .limit(100),
+        .limit(100),supabase.from("ihlink_bank_accounts").select("*").order("is_default",{ascending:false}),supabase.from("direct_transfer_submissions").select("id,platform_code,source_reference,amount,sender_name,sender_bank,customer_reference,status,created_at").order("created_at",{ascending:false}).limit(100),
     ]);
     const combined: Row[] = [
       ...(dt.data || []).map((x) => ({
@@ -267,6 +268,7 @@ export function AdminFinancePage() {
         (x) => ({ ...x, amount: Number(x.amount) }) as Refund,
       ),
     );
+    setBanks((ba.data||[]) as Bank[]);setTransfers((tr.data||[]) as DirectTransfer[]);
     setNotice(
       dt.error?.message ||
         wf.error?.message ||
@@ -276,7 +278,7 @@ export function AdminFinancePage() {
         ho.error?.message ||
         cp.error?.message || bp.error?.message || bi.error?.message ||
         le.error?.message ||
-        rr.error?.message ||
+        rr.error?.message || ba.error?.message || tr.error?.message ||
         "",
     );
   }, []);
@@ -400,6 +402,10 @@ export function AdminFinancePage() {
     setNotice(error?.message || `Refund ${status}.`);
     await load();
   }
+
+  async function saveBank(){if(!supabase||!profile||!bank.bank_name||!bank.account_name||!bank.account_number)return;setBusy(true);const{error}=await supabase.from("ihlink_bank_accounts").insert({...bank,is_active:true,is_default:banks.length===0,created_by:profile.id});setBusy(false);setNotice(error?.message||"IHLink bank account saved.");if(!error){setBank({label:"IHLink Main Account",bank_name:"",account_name:"",account_number:""});await load()}}
+  async function reviewTransfer(id:string,status:"verified"|"rejected"){if(!supabase||!profile)return;setBusy(true);const{error}=await supabase.from("direct_transfer_submissions").update({status,verified_by:profile.id,verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id);setBusy(false);setNotice(error?.message||`Direct transfer ${status}. Settlement remains subject to the platform invoice finalization workflow.`);await load()}
+
   function exportCsv() {
     const header = [
       "Reference",
@@ -570,6 +576,7 @@ export function AdminFinancePage() {
           </table>
         </div>
       </Card>
+      <div className="grid gap-6 xl:grid-cols-2"><Card><h3 className="font-bold">IHLink direct-transfer bank accounts</h3><p className="mt-1 text-xs text-muted">These accounts are for IHLink-owned services only. School fee collection remains school-owned.</p><div className="mt-4 grid gap-3"><input className={input} placeholder="Bank name" value={bank.bank_name} onChange={e=>setBank({...bank,bank_name:e.target.value})}/><input className={input} placeholder="Account name" value={bank.account_name} onChange={e=>setBank({...bank,account_name:e.target.value})}/><input className={input} placeholder="Account number" value={bank.account_number} onChange={e=>setBank({...bank,account_number:e.target.value})}/><Button disabled={busy} onClick={()=>void saveBank()}>Add bank account</Button></div><div className="mt-4 divide-y">{banks.map(x=><div className="py-3 text-sm" key={x.id}><b>{x.bank_name} · {x.account_number}</b><p>{x.account_name} {x.is_default?"· Default":""}</p></div>)}</div></Card><Card><h3 className="font-bold">Direct transfers awaiting verification</h3><div className="mt-4 divide-y">{transfers.filter(x=>x.status==="awaiting_verification").map(x=><div className="py-4" key={x.id}><div className="flex justify-between gap-3"><div><b>{x.customer_reference}</b><p className="text-xs text-muted">{x.platform_code} · {x.source_reference} · {x.sender_name}{x.sender_bank?` · ${x.sender_bank}`:""}</p></div><b>{money(x.amount)}</b></div><div className="mt-3 flex gap-2"><Button size="sm" disabled={busy} onClick={()=>void reviewTransfer(x.id,"verified")}>Verify</Button><Button size="sm" variant="danger" disabled={busy} onClick={()=>void reviewTransfer(x.id,"rejected")}>Reject</Button></div></div>)}{!transfers.some(x=>x.status==="awaiting_verification")&&<p className="py-5 text-sm text-muted">No direct transfers awaiting verification.</p>}</div></Card></div>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <h3 className="font-bold">Manual ledger entry</h3>
