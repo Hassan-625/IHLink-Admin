@@ -25,6 +25,7 @@ import { AdminIntegrationsPage } from '@/pages/admin/AdminIntegrationsPage';
 import { AdminSchoolProCustomRequests } from '@/pages/admin/AdminSchoolProCustomRequests';
 import { AdminStatePage } from '@/pages/admin/AdminStatePage';
 import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManagementPage';
+import { AdminOperationalDirectoryPage } from '@/pages/admin/AdminOperationalDirectoryPage';
 import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
@@ -63,7 +64,11 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/customers" element={<Guard><AdminIdentityManagementPage mode="customers"/></Guard>}/>
   <Route path="/admin/administrators" element={<Guard superOnly><AdminIdentityManagementPage mode="administrators"/></Guard>}/>
   <Route path="/admin/roles" element={<Guard superOnly><AdminIdentityManagementPage mode="roles"/></Guard>}/>
-  {['products','pricing','audit-logs','settings','subscriptions','leads','projects','payments','schools'].map(name=><Route key={name} path={`/admin/${name}`} element={module(name)}/>)}
+  <Route path="/admin/products" element={<Guard><AdminOperationalDirectoryPage mode="products"/></Guard>}/>
+  <Route path="/admin/pricing" element={<Guard superOnly><AdminOperationalDirectoryPage mode="pricing"/></Guard>}/>
+  <Route path="/admin/audit-logs" element={<Guard superOnly><AdminOperationalDirectoryPage mode="audit-logs"/></Guard>}/>
+  <Route path="/admin/settings" element={<Guard superOnly><AdminOperationalDirectoryPage mode="settings"/></Guard>}/>
+  {['subscriptions','leads','projects','payments','schools'].map(name=><Route key={name} path={`/admin/${name}`} element={module(name)}/>)}
   <Route path="/admin/access-denied" element={<AdminStatePage state="access"/>}/>
   <Route path="/admin/session-expired" element={<AdminStatePage state="session"/>}/>
   <Route path="/admin/system-error" element={<AdminStatePage state="error"/>}/>
