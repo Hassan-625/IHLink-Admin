@@ -6,7 +6,8 @@ export function canOpenAdminPath(path:string,profile:UserProfile|null,grants:Adm
  if(!['platform_admin','support','finance'].includes(profile.role))return false;
  if(!path.startsWith('/admin'))return true;
  const module=path.split('/')[2]||'';
- if(!module)return grants.some(item=>item.can_use_command_center);\n if(module==='notifications')return grants.some(item=>item.can_use_command_center);
+ if(!module)return grants.some(item=>item.can_use_command_center);
+ if(module==='notifications')return grants.some(item=>item.can_use_command_center);
  if(['finance','payments','subscriptions'].includes(module))return profile.role==='finance';
  if(module==='support')return profile.role==='support';
  const product=products[module];if(!product)return false;
