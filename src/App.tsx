@@ -29,6 +29,8 @@ import { AdminLivePage } from '@/pages/admin/AdminLivePage';
 import { AdminOperationalDirectoryPage } from '@/pages/admin/AdminOperationalDirectoryPage';
 import { AdminSchoolProSubscriptions } from '@/pages/admin/AdminSchoolProSubscriptions';
 import { AdminCommercialPricingPage } from '@/pages/admin/AdminCommercialPricingPage';
+import { AdminTemplateStudioPage } from '@/pages/admin/AdminTemplateStudioPage';
+import { AdminEmailTemplatesPage } from '@/pages/admin/AdminEmailTemplatesPage';
 import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
@@ -60,6 +62,8 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/finance" element={<Guard><AdminFinancePage/></Guard>}/>
   <Route path="/admin/support" element={<Guard><AdminSupportPage/></Guard>}/>
   <Route path="/admin/notifications" element={<Guard><AdminNotificationsPage/></Guard>}/>
+  <Route path="/admin/templates" element={<Guard superOnly><AdminTemplateStudioPage/></Guard>}/>
+  <Route path="/admin/email-templates" element={<Guard superOnly><AdminEmailTemplatesPage/></Guard>}/>
   <Route path="/admin/security" element={<Guard superOnly><AdminSecurityPage/></Guard>}/>
   <Route path="/admin/account-deletions" element={<Guard superOnly><AdminDeletionRequestsPage/></Guard>}/>
   <Route path="/admin/readiness" element={<Guard superOnly><AdminReadinessPage/></Guard>}/>
