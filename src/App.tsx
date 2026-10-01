@@ -28,6 +28,7 @@ import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManageme
 import { AdminLivePage } from '@/pages/admin/AdminLivePage';
 import { AdminOperationalDirectoryPage } from '@/pages/admin/AdminOperationalDirectoryPage';
 import { AdminSchoolProSubscriptions } from '@/pages/admin/AdminSchoolProSubscriptions';
+import { AdminCommercialPricingPage } from '@/pages/admin/AdminCommercialPricingPage';
 import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
@@ -67,7 +68,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/administrators" element={<Guard superOnly><AdminLivePage module="administrators"/></Guard>}/>
   <Route path="/admin/roles" element={<Guard superOnly><AdminLivePage module="roles"/></Guard>}/>
   <Route path="/admin/products" element={<Guard><AdminOperationalDirectoryPage mode="products"/></Guard>}/>
-  <Route path="/admin/pricing" element={<Guard superOnly><AdminOperationalDirectoryPage mode="pricing"/></Guard>}/>
+  <Route path="/admin/pricing" element={<Guard superOnly><AdminCommercialPricingPage/></Guard>}/>
   <Route path="/admin/audit-logs" element={<Guard superOnly><AdminOperationalDirectoryPage mode="audit-logs"/></Guard>}/>
   <Route path="/admin/settings" element={<Guard superOnly><AdminOperationalDirectoryPage mode="settings"/></Guard>}/>
   <Route path="/admin/subscriptions" element={<Guard superOnly><AdminSchoolProSubscriptions/></Guard>}/>
