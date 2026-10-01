@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-white text-ink placeholder:text-gray-400 transition-all focus:outline-none focus:ring-2 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''} ${error ? 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500' : ''} ${className}`}
+            className={`w-full px-3.5 py-2.5 text-sm rounded-xl border border-border bg-white shadow-sm text-ink placeholder:text-gray-400 transition-all focus:outline-none focus:ring-4 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''} ${error ? 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500' : ''} ${className}`}
             {...props}
           />
           {rightIcon && (
@@ -65,7 +65,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={inputId}
-          className={`w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-white text-ink placeholder:text-gray-400 transition-all focus:outline-none focus:ring-2 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${error ? 'border-rose-400' : ''} ${className}`}
+          className={`w-full px-3.5 py-2.5 text-sm rounded-xl border border-border bg-white shadow-sm text-ink placeholder:text-gray-400 transition-all focus:outline-none focus:ring-4 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${error ? 'border-rose-400' : ''} ${className}`}
           {...props}
         />
         {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
@@ -97,7 +97,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           id={inputId}
-          className={`w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-white text-ink transition-all focus:outline-none focus:ring-2 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${error ? 'border-rose-400' : ''} ${className}`}
+          className={`w-full px-3.5 py-2.5 text-sm rounded-xl border border-border bg-white shadow-sm text-ink transition-all focus:outline-none focus:ring-4 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${error ? 'border-rose-400' : ''} ${className}`}
           {...props}
         >
           {options ? options.map(o => <option key={o.value} value={o.value}>{o.label}</option>) : children}
