@@ -24,6 +24,7 @@ import { AdminReadinessPage } from '@/pages/admin/AdminReadinessPage';
 import { AdminIntegrationsPage } from '@/pages/admin/AdminIntegrationsPage';
 import { AdminSchoolProCustomRequests } from '@/pages/admin/AdminSchoolProCustomRequests';
 import { AdminStatePage } from '@/pages/admin/AdminStatePage';
+import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManagementPage';
 import type { ProductKey } from '@/context/AuthContext';
 
 const adminRoles = ['super_admin', 'platform_admin', 'support', 'finance'] as const;
@@ -59,7 +60,10 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/account-deletions" element={<Guard superOnly><AdminDeletionRequestsPage/></Guard>}/>
   <Route path="/admin/readiness" element={<Guard superOnly><AdminReadinessPage/></Guard>}/>
   <Route path="/admin/integrations" element={<Guard superOnly><AdminIntegrationsPage/></Guard>}/>
-  {['products','pricing','customers','administrators','roles','audit-logs','settings','subscriptions','leads','projects','payments','schools'].map(name=><Route key={name} path={`/admin/${name}`} element={module(name)}/>)}
+  <Route path="/admin/customers" element={<Guard><AdminIdentityManagementPage mode="customers"/></Guard>}/>
+  <Route path="/admin/administrators" element={<Guard superOnly><AdminIdentityManagementPage mode="administrators"/></Guard>}/>
+  <Route path="/admin/roles" element={<Guard superOnly><AdminIdentityManagementPage mode="roles"/></Guard>}/>
+  {['products','pricing','audit-logs','settings','subscriptions','leads','projects','payments','schools'].map(name=><Route key={name} path={`/admin/${name}`} element={module(name)}/>)}
   <Route path="/admin/access-denied" element={<AdminStatePage state="access"/>}/>
   <Route path="/admin/session-expired" element={<AdminStatePage state="session"/>}/>
   <Route path="/admin/system-error" element={<AdminStatePage state="error"/>}/>
