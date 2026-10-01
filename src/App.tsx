@@ -25,6 +25,7 @@ import { AdminIntegrationsPage } from '@/pages/admin/AdminIntegrationsPage';
 import { AdminSchoolProCustomRequests } from '@/pages/admin/AdminSchoolProCustomRequests';
 import { AdminStatePage } from '@/pages/admin/AdminStatePage';
 import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManagementPage';
+import { AdminLivePage } from '@/pages/admin/AdminLivePage';
 import { AdminOperationalDirectoryPage } from '@/pages/admin/AdminOperationalDirectoryPage';
 import type { ProductKey } from '@/context/AuthContext';
 
@@ -61,9 +62,9 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/account-deletions" element={<Guard superOnly><AdminDeletionRequestsPage/></Guard>}/>
   <Route path="/admin/readiness" element={<Guard superOnly><AdminReadinessPage/></Guard>}/>
   <Route path="/admin/integrations" element={<Guard superOnly><AdminIntegrationsPage/></Guard>}/>
-  <Route path="/admin/customers" element={<Guard><AdminIdentityManagementPage mode="customers"/></Guard>}/>
-  <Route path="/admin/administrators" element={<Guard superOnly><AdminIdentityManagementPage mode="administrators"/></Guard>}/>
-  <Route path="/admin/roles" element={<Guard superOnly><AdminIdentityManagementPage mode="roles"/></Guard>}/>
+  <Route path="/admin/customers" element={<Guard><AdminLivePage module="customers"/></Guard>}/>
+  <Route path="/admin/administrators" element={<Guard superOnly><AdminLivePage module="administrators"/></Guard>}/>
+  <Route path="/admin/roles" element={<Guard superOnly><AdminLivePage module="roles"/></Guard>}/>
   <Route path="/admin/products" element={<Guard><AdminOperationalDirectoryPage mode="products"/></Guard>}/>
   <Route path="/admin/pricing" element={<Guard superOnly><AdminOperationalDirectoryPage mode="pricing"/></Guard>}/>
   <Route path="/admin/audit-logs" element={<Guard superOnly><AdminOperationalDirectoryPage mode="audit-logs"/></Guard>}/>
