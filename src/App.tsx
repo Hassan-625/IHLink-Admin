@@ -19,6 +19,7 @@ import { AdminFinancePage } from '@/pages/admin/AdminFinancePage';
 import { AdminSupportPage } from '@/pages/admin/AdminSupportPage';
 import { AdminNotificationsPage } from '@/pages/admin/AdminNotificationsPage';
 import { AdminSecurityPage } from '@/pages/admin/AdminSecurityPage';
+import { AdminDeletionRequestsPage } from '@/pages/admin/AdminDeletionRequestsPage';
 import { AdminReadinessPage } from '@/pages/admin/AdminReadinessPage';
 import { AdminIntegrationsPage } from '@/pages/admin/AdminIntegrationsPage';
 import { AdminSchoolProCustomRequests } from '@/pages/admin/AdminSchoolProCustomRequests';
@@ -55,6 +56,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/support" element={<Guard><AdminSupportPage/></Guard>}/>
   <Route path="/admin/notifications" element={<Guard><AdminNotificationsPage/></Guard>}/>
   <Route path="/admin/security" element={<Guard superOnly><AdminSecurityPage/></Guard>}/>
+  <Route path="/admin/account-deletions" element={<Guard superOnly><AdminDeletionRequestsPage/></Guard>}/>
   <Route path="/admin/readiness" element={<Guard superOnly><AdminReadinessPage/></Guard>}/>
   <Route path="/admin/integrations" element={<Guard superOnly><AdminIntegrationsPage/></Guard>}/>
   {['products','pricing','customers','administrators','roles','audit-logs','settings','subscriptions','leads','projects','payments','schools'].map(name=><Route key={name} path={`/admin/${name}`} element={module(name)}/>)}
