@@ -6,11 +6,11 @@ export function canOpenAdminPath(path:string,profile:UserProfile|null,grants:Adm
  if(!['platform_admin','support','finance'].includes(profile.role))return false;
  if(!path.startsWith('/admin'))return true;
  const module=path.split('/')[2]||'';
- if(!module||module==='notifications')return true;
+ if(!module)return grants.some(item=>item.can_use_command_center);\n if(module==='notifications')return grants.some(item=>item.can_use_command_center);
  if(['finance','payments','subscriptions'].includes(module))return profile.role==='finance';
  if(module==='support')return profile.role==='support';
  const product=products[module];if(!product)return false;
  const grant=grants.find(item=>item.product===product);
  
- return Boolean(grant?.can_view);
+ return Boolean(grant?.can_view&&grant?.can_use_command_center);
 }
