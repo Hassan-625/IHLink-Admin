@@ -45,7 +45,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/signin" element={<AdminLogin/>}/>
   <Route path="/admin/login" element={<AdminLogin/>}/>
   <Route path="/admin" element={<Guard><AdminDashboard/></Guard>}/>
-  <Route path="/admin/content" element={<Guard superOnly><AdminContentManager/></Guard>}/>
+  <Route path="/admin/content" element={<Guard><ProtectedRoute roles={[...adminRoles]} product="corporate" permission="website_builder"><AdminContentManager/></ProtectedRoute></Guard>}/>
   <Route path="/admin/datasub" element={<Guard product="datasub"><AdminDataSubPage/></Guard>}/>
   <Route path="/admin/datasub/provider-pricing" element={<Guard product="datasub"><AdminDataSubProviderPricing/></Guard>}/>
   <Route path="/admin/schoolpro" element={module('schoolpro')}/>
@@ -76,9 +76,9 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/audit-logs" element={<Guard superOnly><AdminOperationalDirectoryPage mode="audit-logs"/></Guard>}/>
   <Route path="/admin/settings" element={<Guard superOnly><AdminOperationalDirectoryPage mode="settings"/></Guard>}/>
   <Route path="/admin/subscriptions" element={<Guard superOnly><AdminSchoolProSubscriptions/></Guard>}/>
-  <Route path="/admin/schools" element={<Guard><AdminModulePage module="schoolpro"/></Guard>}/>
-  <Route path="/admin/payments" element={<Guard><AdminModulePage module="finance"/></Guard>}/>
-  <Route path="/admin/projects" element={<Guard><AdminModulePage module="products"/></Guard>}/>
+  <Route path="/admin/schools" element={<Navigate to="/admin/schoolpro" replace/>}/>
+  <Route path="/admin/payments" element={<Navigate to="/admin/finance" replace/>}/>
+  <Route path="/admin/projects" element={<Navigate to="/admin/products" replace/>}/>
   <Route path="/admin/leads" element={<Navigate to="/admin/customers" replace/>}/>
   <Route path="/admin/access-denied" element={<AdminStatePage state="access"/>}/>
   <Route path="/admin/session-expired" element={<AdminStatePage state="session"/>}/>
