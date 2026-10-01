@@ -45,7 +45,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/signin" element={<AdminLogin/>}/>
   <Route path="/admin/login" element={<AdminLogin/>}/>
   <Route path="/admin" element={<Guard><AdminDashboard/></Guard>}/>
-  <Route path="/admin/content" element={<Guard><ProtectedRoute roles={[...adminRoles]} product="corporate" permission="website_builder"><AdminContentManager/></ProtectedRoute></Guard>}/>
+  <Route path="/admin/content" element={<ProtectedRoute roles={[...adminRoles]} product="corporate" permission="website_builder"><AdminContentManager/></ProtectedRoute>}/>
   <Route path="/admin/datasub" element={<Guard product="datasub"><AdminDataSubPage/></Guard>}/>
   <Route path="/admin/datasub/provider-pricing" element={<Guard product="datasub"><AdminDataSubProviderPricing/></Guard>}/>
   <Route path="/admin/schoolpro" element={module('schoolpro')}/>
