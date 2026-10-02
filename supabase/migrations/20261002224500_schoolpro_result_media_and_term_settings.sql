@@ -1,0 +1,9 @@
+alter table public.schoolpro_students add column if not exists photo_storage_path text;
+create table if not exists public.schoolpro_result_term_settings(
+ id uuid primary key default gen_random_uuid(),school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
+ session text not null,term text not null,next_term_begins date,class_days integer,verification_base_url text,
+ principal_name text,principal_signature_path text,form_teacher_signature_path text,updated_by uuid references auth.users(id),
+ created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(school_id,session,term));
+alter table public.schoolpro_result_term_settings enable row level security;
+create policy "School users read result term settings" on public.schoolpro_result_term_settings for select to authenticated using(private.has_school_access(school_id) or private.is_admin(array['super_admin'::public.user_role]));
+create policy "School leaders manage result term settings" on public.schoolpro_result_term_settings for all to authenticated using(private.has_school_access(school_id,array['proprietor'::public.school_member_role,'administrator'::public.school_member_role,'head_teacher'::public.school_member_role,'vice_principal'::public.school_member_role]) or private.is_admin(array['super_admin'::public.user_role])) with check((private.has_school_access(school_id,array['proprietor'::public.school_member_role,'administrator'::public.school_member_role,'head_teacher'::public.school_member_role,'vice_principal'::public.school_member_role]) or private.is_admin(array['super_admin'::public.user_role])) and updated_by=auth.uid());
