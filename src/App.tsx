@@ -24,6 +24,8 @@ import { AdminDeletionRequestsPage } from '@/pages/admin/AdminDeletionRequestsPa
 import { AdminReadinessPage } from '@/pages/admin/AdminReadinessPage';
 import { AdminIntegrationsPage } from '@/pages/admin/AdminIntegrationsPage';
 import { AdminSchoolProCustomRequests } from '@/pages/admin/AdminSchoolProCustomRequests';
+import { AdminSchoolProWorkspace } from '@/pages/admin/AdminSchoolProWorkspace';
+import { AdminSchoolProResultTemplates } from '@/pages/admin/AdminSchoolProResultTemplates';
 import { AdminStatePage } from '@/pages/admin/AdminStatePage';
 import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManagementPage';
 import { AdminLivePage } from '@/pages/admin/AdminLivePage';
