@@ -42,6 +42,7 @@ export function AdminEngineeringPage() {
   const [requests, setRequests] = useState<Request[]>([]),
     [projects, setProjects] = useState<Project[]>([]),
     [tickets, setTickets] = useState<Ticket[]>([]),
+    [proposals,setProposals]=useState<any[]>([]),[invoices,setInvoices]=useState<any[]>([]),[risks,setRisks]=useState<any[]>([]),[tests,setTests]=useState<any[]>([]),
     [busy, setBusy] = useState(""),
     [notice, setNotice] = useState("");
   const [operation, setOperation] = useState({
@@ -79,7 +80,7 @@ export function AdminEngineeringPage() {
       ...v,
       project_id: v.project_id || p.data?.[0]?.id || "",
     }));
-    setNotice(r.error?.message || p.error?.message || t.error?.message || "");
+    const [pp,ii,rr,tt]=await Promise.all([supabase.from('engineering_proposals').select('*').order('created_at',{ascending:false}),supabase.from('engineering_invoices').select('*').order('created_at',{ascending:false}),supabase.from('engineering_risks').select('*').order('created_at',{ascending:false}),supabase.from('engineering_tests').select('*').order('created_at',{ascending:false})]);setProposals(pp.data||[]);setInvoices(ii.data||[]);setRisks(rr.data||[]);setTests(tt.data||[]);setNotice(r.error?.message || p.error?.message || t.error?.message || pp.error?.message || ii.error?.message || rr.error?.message || tt.error?.message || "");
   }, []);
   useEffect(() => {
     void load();
@@ -474,6 +475,7 @@ export function AdminEngineeringPage() {
           ))}
         </div>
       </Card>
+<Card><h3 className="font-bold">Commercial & technical controls</h3><p className="mt-1 text-sm text-muted">Production-backed proposal, invoice, risk and commissioning/test records.</p><div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4"><div className="rounded-xl border p-4"><p className="text-xs text-muted">Proposals</p><b className="text-2xl">{proposals.length}</b><p className="mt-2 text-xs">{proposals.filter(x=>['draft','sent','pending'].includes(x.status)).length} open</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted">Invoices</p><b className="text-2xl">{invoices.length}</b><p className="mt-2 text-xs">{invoices.filter(x=>!['paid','cancelled'].includes(x.status)).length} outstanding</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted">Risks</p><b className="text-2xl">{risks.length}</b><p className="mt-2 text-xs">{risks.filter(x=>x.status!=='closed').length} open</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted">Tests / commissioning</p><b className="text-2xl">{tests.length}</b><p className="mt-2 text-xs">{tests.filter(x=>x.status!=='completed').length} pending</p></div></div></Card>
     </ModulePage>
   );
 }
