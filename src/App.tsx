@@ -2,6 +2,7 @@ import {useAuth} from '@/context/AuthContext';
 import {canOpenAdminPath} from '@/lib/adminNavigationPermissions';
 import {AuthHandoffPage} from '@/pages/auth/AuthHandoffPage';
 import {AdminPrintPage} from '@/pages/admin/AdminPrintPage';
+import {AdminPrintWorkspace} from '@/pages/admin/AdminPrintWorkspace';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -56,6 +57,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/host" element={<Guard product="host"><AdminHostPage/></Guard>}/>
   <Route path="/admin/business-centre" element={<Guard product="business_centre"><AdminBusinessPage unit="business_centre"/></Guard>}/>
   <Route path="/admin/print" element={<Guard product="print"><AdminPrintPage/></Guard>}/>
+  <Route path="/admin/print/workspace/:section" element={<Guard product="print"><AdminPrintWorkspace/></Guard>}/>
   <Route path="/admin/fabrication" element={<Guard product="fabrication"><AdminBusinessPage unit="fabrication"/></Guard>}/>
   <Route path="/admin/compute" element={<Guard product="compute"><AdminBusinessPage unit="compute"/></Guard>}/>
   <Route path="/admin/academy" element={<Guard product="academy"><AdminBusinessPage unit="academy"/></Guard>}/>
