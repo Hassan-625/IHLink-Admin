@@ -51,6 +51,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/datasub/provider-pricing" element={<Guard product="datasub"><AdminDataSubProviderPricing/></Guard>}/>
   <Route path="/admin/schoolpro" element={module('schoolpro')}/>
   <Route path="/admin/schoolpro/custom-requests" element={<Guard superOnly><AdminSchoolProCustomRequests/></Guard>}/>
+  <Route path="/admin/schoolpro/workspace/result-templates" element={<Guard product="schoolpro"><AdminSchoolProResultTemplates/></Guard>}/>
   <Route path="/admin/schoolpro/workspace/:section" element={<Guard product="schoolpro"><AdminSchoolProWorkspace/></Guard>}/>
   <Route path="/admin/consult" element={<Guard product="consult"><AdminConsultPage/></Guard>}/>
   <Route path="/admin/engineering" element={<Guard product="engineering"><AdminEngineeringPage/></Guard>}/>
