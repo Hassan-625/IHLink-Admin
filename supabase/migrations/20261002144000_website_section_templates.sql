@@ -1,0 +1,4 @@
+create table if not exists public.site_section_templates (id uuid primary key default gen_random_uuid(),name text not null,category text not null default 'general',platform_key text,section_payload jsonb not null default '{}'::jsonb,is_active boolean not null default true,created_by uuid references auth.users(id),updated_by uuid references auth.users(id),created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+alter table public.site_section_templates enable row level security;
+create policy "site templates super admin manage" on public.site_section_templates for all to authenticated using (private.is_admin(array['super_admin']::public.user_role[])) with check (private.is_admin(array['super_admin']::public.user_role[]));
+create policy "site templates admin read" on public.site_section_templates for select to authenticated using (is_active);
