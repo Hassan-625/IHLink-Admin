@@ -1,0 +1,2 @@
+-- Production migration: schoolpro_result_class_rank RPC.
+-- Applied live in Supabase. The function computes class population, position, total and average for an authorized SchoolPro user.
