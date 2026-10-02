@@ -16,6 +16,7 @@ import { AdminConsultPage } from '@/pages/admin/AdminConsultPage';
 import { AdminEngineeringPage } from '@/pages/admin/AdminEngineeringPage';
 import { AdminHostPage } from '@/pages/admin/AdminHostPage';
 import { AdminBusinessPage } from '@/pages/admin/AdminBusinessPage';
+import { AdminSpecialistPlatformPage } from '@/pages/admin/AdminSpecialistPlatformPage';
 import { AdminFinancePage } from '@/pages/admin/AdminFinancePage';
 import { AdminSupportPage } from '@/pages/admin/AdminSupportPage';
 import { AdminNotificationsPage } from '@/pages/admin/AdminNotificationsPage';
@@ -65,10 +66,10 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/business-centre" element={<Guard product="business_centre"><AdminBusinessPage unit="business_centre"/></Guard>}/>
   <Route path="/admin/print" element={<Guard product="print"><AdminPrintPage/></Guard>}/>
   <Route path="/admin/print/workspace/:section" element={<Guard product="print"><AdminPrintWorkspace/></Guard>}/>
-  <Route path="/admin/fabrication" element={<Guard product="fabrication"><AdminBusinessPage unit="fabrication"/></Guard>}/>
-  <Route path="/admin/compute" element={<Guard product="compute"><AdminBusinessPage unit="compute"/></Guard>}/>
+  <Route path="/admin/fabrication" element={<Guard product="fabrication"><AdminSpecialistPlatformPage unit="fabrication"/></Guard>}/>
+  <Route path="/admin/compute" element={<Guard product="compute"><AdminSpecialistPlatformPage unit="compute"/></Guard>}/>
   <Route path="/admin/academy" element={<Guard product="academy"><AdminBusinessPage unit="academy"/></Guard>}/>
-  <Route path="/admin/digital-business" element={<Guard product="digital_business"><AdminBusinessPage unit="digital_business"/></Guard>}/>
+  <Route path="/admin/digital-business" element={<Guard product="digital_business"><AdminSpecialistPlatformPage unit="digital_business"/></Guard>}/>
   <Route path="/admin/finance" element={<Guard><AdminFinancePage/></Guard>}/>
   <Route path="/admin/support" element={<Guard><AdminSupportPage/></Guard>}/>
   <Route path="/admin/notifications" element={<Guard><AdminNotificationsPage/></Guard>}/>
