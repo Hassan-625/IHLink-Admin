@@ -11,6 +11,7 @@ import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminModulePage } from '@/pages/admin/AdminModulePage';
 import { AdminContentManager } from '@/pages/admin/AdminContentManager';
 import { AdminPlatformFeatureBuilder } from '@/pages/admin/AdminPlatformFeatureBuilder';
+import { AdminNavigationBuilder } from '@/pages/admin/AdminNavigationBuilder';
 import { AdminDataSubPage } from '@/pages/admin/AdminDataSubPage';
 import { AdminDataSubProviderPricing } from '@/pages/admin/AdminDataSubProviderPricing';
 import { AdminConsultPage } from '@/pages/admin/AdminConsultPage';
@@ -55,6 +56,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin" element={<Guard><AdminDashboard/></Guard>}/>
   <Route path="/admin/content" element={<Guard superOnly><AdminContentManager/></Guard>}/>
   <Route path="/admin/platform-builder" element={<Guard superOnly><AdminPlatformFeatureBuilder/></Guard>}/>
+  <Route path="/admin/navigation-builder" element={<Guard superOnly><AdminNavigationBuilder/></Guard>}/>
   <Route path="/admin/datasub" element={<Guard product="datasub"><AdminDataSubPage/></Guard>}/>
   <Route path="/admin/datasub/provider-pricing" element={<Guard product="datasub"><AdminDataSubProviderPricing/></Guard>}/>
   <Route path="/admin/schoolpro" element={module('schoolpro')}/>
