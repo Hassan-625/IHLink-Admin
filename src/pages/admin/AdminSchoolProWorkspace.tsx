@@ -28,7 +28,18 @@ const defs:Record<string,Def>={
  guardians:{title:'Parents & Guardians',description:'Guardian links and parent access.',tables:['schoolpro_guardian_links']},
  staff:{title:'Staff & Access',description:'Staff membership and access controls.',tables:['schoolpro_members','schoolpro_member_permissions']},
  permissions:{title:'Roles & Permissions',description:'School-level operational permissions.',tables:['schoolpro_members','schoolpro_member_permissions']},
- operations:{title:'School Operations',description:'Library, transport, hostel, inventory, payroll, leave, discipline and health.',tables:['schoolpro_library_books','schoolpro_transport_routes','schoolpro_hostel_rooms','schoolpro_inventory_assets','schoolpro_payroll_records','schoolpro_leave_requests','schoolpro_discipline_records','schoolpro_health_records']},
+ library:{title:'Library Management',description:'Library catalogue, circulation and school library operations.',tables:['schoolpro_library_books']},
+ transport:{title:'Transport Management',description:'Routes and school transport operations.',tables:['schoolpro_transport_routes']},
+ hostel:{title:'Hostel Management',description:'Hostel rooms and accommodation operations.',tables:['schoolpro_hostel_rooms']},
+ inventory:{title:'Inventory & Assets',description:'School inventory and asset operations.',tables:['schoolpro_inventory_assets']},
+ payroll:{title:'Payroll',description:'Staff payroll records and payroll operations.',tables:['schoolpro_payroll_records']},
+ leave:{title:'Leave Management',description:'Staff leave requests and approval workflows.',tables:['schoolpro_leave_requests']},
+ discipline:{title:'Discipline',description:'Student discipline records and actions.',tables:['schoolpro_discipline_records']},
+ medical:{title:'Medical & Health',description:'School clinic and student health records.',tables:['schoolpro_health_records']},
+ calendar:{title:'School Calendar',description:'School calendar and scheduled academic events.',tables:['schoolpro_calendar_events']},
+ 'lesson-notes':{title:'Lesson Notes',description:'Teacher lesson-note workflows and approvals.',tables:['schoolpro_lesson_notes']},
+ promotions:{title:'Student Promotions',description:'Promotion, repeat and class-transition workflows.',tables:['schoolpro_promotions']},
+ operations:{title:'School Operations Overview',description:'Consolidated operational datasets.',tables:['schoolpro_library_books','schoolpro_transport_routes','schoolpro_hostel_rooms','schoolpro_inventory_assets','schoolpro_payroll_records','schoolpro_leave_requests','schoolpro_discipline_records','schoolpro_health_records']},
  notifications:{title:'Notifications',description:'SchoolPro notification and email queues.',tables:['schoolpro_notifications','schoolpro_email_queue']}
 };
 const label=(s:string)=>s.replace(/^schoolpro_/,'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase());
