@@ -17,6 +17,7 @@ import { AdminEngineeringPage } from '@/pages/admin/AdminEngineeringPage';
 import { AdminHostPage } from '@/pages/admin/AdminHostPage';
 import { AdminBusinessPage } from '@/pages/admin/AdminBusinessPage';
 import { AdminSpecialistPlatformPage } from '@/pages/admin/AdminSpecialistPlatformPage';
+import { AdminAcademyPage } from '@/pages/admin/AdminAcademyPage';
 import { AdminFinancePage } from '@/pages/admin/AdminFinancePage';
 import { AdminSupportPage } from '@/pages/admin/AdminSupportPage';
 import { AdminNotificationsPage } from '@/pages/admin/AdminNotificationsPage';
@@ -68,7 +69,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/print/workspace/:section" element={<Guard product="print"><AdminPrintWorkspace/></Guard>}/>
   <Route path="/admin/fabrication" element={<Guard product="fabrication"><AdminSpecialistPlatformPage unit="fabrication"/></Guard>}/>
   <Route path="/admin/compute" element={<Guard product="compute"><AdminSpecialistPlatformPage unit="compute"/></Guard>}/>
-  <Route path="/admin/academy" element={<Guard product="academy"><AdminBusinessPage unit="academy"/></Guard>}/>
+  <Route path="/admin/academy" element={<Guard product="academy"><AdminAcademyPage/></Guard>}/>
   <Route path="/admin/digital-business" element={<Guard product="digital_business"><AdminSpecialistPlatformPage unit="digital_business"/></Guard>}/>
   <Route path="/admin/finance" element={<Guard><AdminFinancePage/></Guard>}/>
   <Route path="/admin/support" element={<Guard><AdminSupportPage/></Guard>}/>
