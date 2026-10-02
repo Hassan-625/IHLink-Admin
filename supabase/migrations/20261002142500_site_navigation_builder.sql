@@ -1,0 +1,5 @@
+create table if not exists public.site_navigation_items (id uuid primary key default gen_random_uuid(),platform_key text not null,label text not null,href text not null,parent_id uuid references public.site_navigation_items(id) on delete cascade,sort_order integer not null default 0,location text not null default 'header',is_visible boolean not null default true,open_new_tab boolean not null default false,created_by uuid references auth.users(id),updated_by uuid references auth.users(id),created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+alter table public.site_navigation_items enable row level security;
+create policy "site nav public read" on public.site_navigation_items for select to anon,authenticated using (is_visible);
+create policy "site nav super admin manage" on public.site_navigation_items for all to authenticated using (private.is_admin(array['super_admin']::public.user_role[])) with check (private.is_admin(array['super_admin']::public.user_role[]));
+create index if not exists site_navigation_platform_idx on public.site_navigation_items(platform_key,location,sort_order);
