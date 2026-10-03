@@ -88,12 +88,6 @@ export function AdminFinancePage() {
     description: "",
     amount: "",
   });
-  const [refund, setRefund] = useState({
-    product: "datasub",
-    source_reference: "",
-    amount: "",
-    reason: "",
-  });
 
   const load = useCallback(async () => {
     if (!supabase) return;
@@ -343,31 +337,6 @@ export function AdminFinancePage() {
       await load();
     }
   }
-  async function addRefund() {
-    if (
-      !supabase ||
-      !profile ||
-      !refund.source_reference ||
-      !refund.reason ||
-      Number(refund.amount) <= 0
-    )
-      return;
-    setBusy(true);
-    const { error } = await supabase
-      .from("finance_refund_requests")
-      .insert({
-        ...refund,
-        amount: Number(refund.amount),
-        requested_by: profile.id,
-        status: "requested",
-      });
-    setBusy(false);
-    setNotice(error?.message || "Refund request created for approval.");
-    if (!error) {
-      setRefund({ ...refund, source_reference: "", amount: "", reason: "" });
-      await load();
-    }
-  }
   async function updateLedger(id: string, status: string) {
     if (!supabase || !profile) return;
     setBusy(true);
@@ -384,24 +353,8 @@ export function AdminFinancePage() {
     setNotice(error?.message || `Ledger entry ${status}.`);
     await load();
   }
-  async function updateRefund(id: string, status: string) {
-    if (!supabase || !profile) return;
-    setBusy(true);
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from("finance_refund_requests")
-      .update({
-        status,
-        reviewed_by: profile.id,
-        reviewed_at: now,
-        processed_at: status === "processed" ? now : null,
-        updated_at: now,
-      })
-      .eq("id", id);
-    setBusy(false);
-    setNotice(error?.message || `Refund ${status}.`);
-    await load();
-  }
+  async function reviewRefund(id:string,decision:"approved"|"rejected"){if(!supabase)return;const note=prompt(decision==="approved"?"Approval note (optional)":"Reason for rejection");if(note===null)return;setBusy(true);const{error}=await supabase.rpc("review_finance_refund",{p_refund:id,p_decision:decision,p_note:note||null});setBusy(false);setNotice(error?.message||`Refund ${decision}.`);await load()}
+  async function processRefund(id:string){if(!supabase)return;const reference=prompt("Enter the provider/bank refund reference after the money has actually been returned");if(!reference?.trim())return;setBusy(true);const{error}=await supabase.rpc("mark_finance_refund_processed",{p_refund:id,p_provider_reference:reference.trim()});setBusy(false);setNotice(error?.message||"Refund marked processed and audit trail recorded.");await load()}
 
   async function saveBank(){if(!supabase||!profile||!bank.bank_name||!bank.account_name||!bank.account_number)return;setBusy(true);const{error}=await supabase.from("ihlink_bank_accounts").insert({...bank,is_active:true,is_default:banks.length===0,created_by:profile.id});setBusy(false);setNotice(error?.message||"IHLink bank account saved.");if(!error){setBank({label:"IHLink Main Account",bank_name:"",account_name:"",account_number:""});await load()}}
   async function openTransferProof(path:string|null){if(!supabase||!path)return;const{data,error}=await supabase.storage.from("direct-transfer-proofs").createSignedUrl(path,300);if(error)return setNotice(error.message);window.open(data.signedUrl,"_blank","noopener,noreferrer")}
@@ -664,66 +617,9 @@ export function AdminFinancePage() {
           </Button>
         </Card>
         <Card>
-          <h3 className="font-bold">Create refund request</h3>
-          <p className="mt-1 text-xs text-muted">
-            Refunds remain pending until a finance approver reviews them.
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <select
-              className={input}
-              value={refund.product}
-              onChange={(e) =>
-                setRefund({ ...refund, product: e.target.value })
-              }
-            >
-              {[
-                "corporate",
-                "datasub",
-                "schoolpro",
-                "consult",
-                "host",
-                "engineering",
-                "business_centre",
-              "fabrication", "compute", "academy", "digital_business",
-                "print",
-                "fabrication",
-                "compute",
-                "academy",
-                "digital_business",
-              ].map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-            <input
-              className={input}
-              placeholder="Original payment reference"
-              value={refund.source_reference}
-              onChange={(e) =>
-                setRefund({ ...refund, source_reference: e.target.value })
-              }
-            />
-            <input
-              type="number"
-              min="1"
-              className={input}
-              placeholder="Refund amount"
-              value={refund.amount}
-              onChange={(e) => setRefund({ ...refund, amount: e.target.value })}
-            />
-            <input
-              className={input}
-              placeholder="Reason"
-              value={refund.reason}
-              onChange={(e) => setRefund({ ...refund, reason: e.target.value })}
-            />
-          </div>
-          <Button
-            className="mt-4"
-            disabled={busy}
-            onClick={() => void addRefund()}
-          >
-            Create refund request
-          </Button>
+          <h3 className="font-bold">Automatic refund queue</h3>
+          <p className="mt-1 text-sm text-muted">Refund requests are created from verified settled payments when paid fulfilment fails. Finance cannot manually change the customer, platform, source reference or amount.</p>
+          <p className="mt-3 text-xs text-muted">Review queued refunds below. Processing requires the actual provider/bank refund reference.</p>
         </Card>
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
@@ -813,14 +709,14 @@ export function AdminFinancePage() {
                       size="sm"
                       variant="secondary"
                       disabled={busy}
-                      onClick={() => void updateRefund(x.id, "approved")}
+                      onClick={() => void reviewRefund(x.id, "approved")}
                     >
                       Approve
                     </Button>
                     <Button
                       size="sm"
                       disabled={busy}
-                      onClick={() => void updateRefund(x.id, "processed")}
+                      onClick={() => void processRefund(x.id)}
                     >
                       Mark processed
                     </Button>
@@ -828,7 +724,7 @@ export function AdminFinancePage() {
                       size="sm"
                       variant="danger"
                       disabled={busy}
-                      onClick={() => void updateRefund(x.id, "rejected")}
+                      onClick={() => void reviewRefund(x.id, "rejected")}
                     >
                       Reject
                     </Button>
