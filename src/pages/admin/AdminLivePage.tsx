@@ -131,6 +131,12 @@ export function AdminLivePage({ module }: { module: "administrators" | "roles" |
 
   async function updateProfile(id: string, changes: Partial<Pick<UserProfile, "role" | "status">>) {
     if (!supabase || !canManage) return;
+    const target = profiles.find((item) => item.id === id);
+    if (changes.role === "super_admin" && target?.role !== "super_admin" && superAdminCount >= 3) {
+      setError("IHLink allows a maximum of three Super Administrators: the protected primary owner plus up to two additional trusted administrators.");
+      setSuccess(null);
+      return;
+    }
     setSaving(true); setError(null); setSuccess(null);
     const { error: updateError } = await supabase.from("profiles").update({ ...changes, updated_at: new Date().toISOString() }).eq("id", id);
     if (updateError) setError(updateError.message);
