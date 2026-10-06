@@ -21,10 +21,10 @@ export function AdminIntegrationsPage(){
    client.from('datasub_provider_health').select('*'),
    client.from('datasub_provider_activation_checks').select('*'),
    client.from('datasub_provider_events').select('*',{count:'exact',head:true}),
-   client.from('datasub_payment_intents').select('*',{count:'exact',head:true}),
+   client.from('payment_transactions').select('*',{count:'exact',head:true}).eq('platform_code','datasub'),
    client.from('schoolpro_payment_intents').select('*',{count:'exact',head:true}),
    client.from('notification_deliveries').select('*',{count:'exact',head:true}),client.from('platform_integrations').select('product,provider_key,provider_name,integration_type,mode,is_enabled')
-  ]); setRegistry(ir.data||[]); if(p.error)setError(p.error.message);else{const hm=new Map((h.data||[]).map((x:any)=>[x.provider_id,x])),cm=new Map((c.data||[]).map((x:any)=>[x.provider_id,x]));setProviders((p.data||[]).map((x:any)=>({...x,available_balance:x.available_balance==null?null:Number(x.available_balance),health:hm.get(x.id),checks:cm.get(x.id)})));}
+  ]); setRegistry(ir.data||[]); const issue=p.error||h.error||c.error||e.error||dp.error||sp.error||nd.error||ir.error;if(issue)setError(issue.message);else{const hm=new Map((h.data||[]).map((x:any)=>[x.provider_id,x])),cm=new Map((c.data||[]).map((x:any)=>[x.provider_id,x]));setProviders((p.data||[]).map((x:any)=>({...x,available_balance:x.available_balance==null?null:Number(x.available_balance),health:hm.get(x.id),checks:cm.get(x.id)})));}
   setCounts({events:e.count||0,datasubPayments:dp.count||0,schoolproPayments:sp.count||0,deliveries:nd.count||0});
   const first=[e.error,dp.error,sp.error,nd.error].find(Boolean);if(first)setError(current=>current||first!.message);setLoading(false);
  },[]);
