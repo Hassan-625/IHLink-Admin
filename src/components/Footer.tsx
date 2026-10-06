@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { PlatformLink as Link } from './PlatformLink';
 import { Logo } from './Logo';
 import { productThemes, type ProductKey } from '@/lib/designTokens';
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, ArrowRight, MessageCircle } from 'lucide-react';
