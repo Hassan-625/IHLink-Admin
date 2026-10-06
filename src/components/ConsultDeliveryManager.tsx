@@ -1,0 +1,51 @@
+import {useCallback,useEffect,useState,type FormEvent} from 'react';
+import {Card} from '@/components/ui/Card';
+import {Button} from '@/components/ui/Button';
+import {supabase} from '@/lib/supabase';
+import {openPlatformWithHandoff} from '@/lib/platformHandoff';
+
+type Project={id:string;project_number:string;name:string};
+type Row=Record<string,any>;
+const money=(value:unknown)=>new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN'}).format(Number(value||0));
+const field='w-full rounded-xl border p-3 text-sm';
+const escape=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
+
+export function ConsultDeliveryManager({projects,onRefresh}:{projects:Project[];onRefresh:()=>Promise<void>}){
+ const [project,setProject]=useState(''),[rows,setRows]=useState<Record<string,Row[]>>({}),[notice,setNotice]=useState(''),[busy,setBusy]=useState(''),[loading,setLoading]=useState(false);
+ const [milestone,setMilestone]=useState({title:'',description:'',due:''});
+ const [delivery,setDelivery]=useState({title:'',description:'',url:'',milestone:''});
+ const load=useCallback(async()=>{
+  if(!supabase||!project){setRows({});return;}setLoading(true);
+  const names=['consult_milestones','consult_deliverables','consult_invoices','consult_quotations','consult_proposals','consult_payment_intents'];
+  const results=await Promise.all(names.map(name=>supabase!.from(name).select('*').eq('project_id',project).order('created_at',{ascending:false})));
+  const issue=results.find(r=>r.error)?.error;
+  if(issue)setNotice(issue.message);
+  setRows(Object.fromEntries(names.map((name,index)=>[name,results[index].data||[]])));setLoading(false);
+ },[project]);
+ useEffect(()=>{void load()},[load]);
+ const run=async(key:string,name:string,args:Record<string,unknown>,success:string)=>{
+  if(!supabase)return;setBusy(key);setNotice('');
+  try{const result=await supabase.rpc(name,args);if(result.error){setNotice(result.error.message);return false;}await Promise.all([load(),onRefresh()]);setNotice(success);return true;}
+  catch(e){setNotice(e instanceof Error?e.message:'Operation failed');return false;}finally{setBusy('');}
+ };
+ const createMilestone=async(e:FormEvent)=>{e.preventDefault();if(await run('milestone','manage_consult_milestone',{p_project:project,p_action:'create',p_title:milestone.title,p_description:milestone.description,p_due:milestone.due||null},'Milestone saved and audited.'))setMilestone({title:'',description:'',due:''});};
+ const submitDelivery=async(e:FormEvent)=>{e.preventDefault();if(await run('delivery','submit_consult_deliverable',{p_project:project,p_title:delivery.title,p_description:delivery.description,p_file_url:delivery.url,p_milestone:delivery.milestone||null},'Deliverable sent for client review.'))setDelivery({title:'',description:'',url:'',milestone:''});};
+ const openClient=async(page:string)=>{try{await openPlatformWithHandoff('consult',`/consult/portal/projects/${project}/${page}`)}catch(e){setNotice(e instanceof Error?e.message:'Unable to open client portal')} };
+ const printInvoice=(invoice:Row)=>{
+  const win=window.open('','_blank','width=900,height=700');if(!win){setNotice('Allow pop-ups to print the invoice.');return;}
+  const selected=projects.find(p=>p.id===project);
+  win.document.write(`<html><head><title>${escape(invoice.invoice_number)}</title><style>body{font-family:Arial;padding:40px;color:#172033}td,th{padding:12px;text-align:left;border-bottom:1px solid #ddd}table{width:100%}</style></head><body><h1>IHLink Consult</h1><h2>Invoice ${escape(invoice.invoice_number)}</h2><p>${escape(selected?.project_number)} · ${escape(selected?.name)}</p><p>${escape(invoice.title)} · ${escape(invoice.status)}</p><table><tr><th>Invoice amount</th><td>${escape(money(invoice.amount))}</td></tr><tr><th>Paid</th><td>${escape(money(invoice.amount_paid))}</td></tr><tr><th>Outstanding</th><td>${escape(money(Math.max(0,Number(invoice.amount)-Number(invoice.amount_paid||0))))}</td></tr></table><p>Due: ${escape(invoice.due_at||'On receipt')}</p></body></html>`);win.document.close();win.focus();win.print();
+ };
+ const accepted=rows.consult_quotations?.find(q=>q.status==='accepted');
+ return <div className="space-y-5">
+  <Card><h3 className="font-bold">Project delivery & commercial workflow</h3><label className="mt-3 block text-sm" htmlFor="delivery-project">Project</label><select id="delivery-project" className={field} value={project} onChange={e=>{setProject(e.target.value);setRows({});setNotice('')}}><option value="">Select a project</option>{projects.map(p=><option key={p.id} value={p.id}>{p.project_number} · {p.name}</option>)}</select>
+  {loading&&<p role="status">Loading live workflow records…</p>}{notice&&<p role="status" aria-live="polite" className="mt-3 rounded-xl border bg-slate-50 p-3 text-sm">{notice}</p>}
+  {project&&<div className="mt-4 space-y-2 text-sm"><p>Accepted quotation: {accepted?`${accepted.quote_number} · ${money(accepted.amount)}`:'Not yet accepted. Accept a monetary quotation before sending the SOW.'}</p><p>Proposals: {(rows.consult_proposals||[]).map(p=>`${p.title}: ${p.status}`).join(' · ')||'None sent.'}</p><p>Invoices: {rows.consult_invoices?.length||0}. A sent proposal becomes an invoice only after the client accepts it.</p><div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={()=>void openClient('proposals')}>Open proposal review portal</Button><Button variant="secondary" onClick={()=>void openClient('invoices')}>Open invoice portal</Button><Button variant="secondary" onClick={()=>void load()}>Refresh workflow</Button></div><p className="text-xs text-muted">Portal links use your own account. Client responses require the project owner's account.</p></div>}
+  </Card>
+  {project&&<><div className="grid gap-5 lg:grid-cols-2">
+   <Card><h3 className="font-bold">Milestones & delivery</h3><form className="mt-3 space-y-3" onSubmit={createMilestone}><input aria-label="Milestone title" required minLength={3} className={field} placeholder="Milestone title" value={milestone.title} onChange={e=>setMilestone({...milestone,title:e.target.value})}/><textarea aria-label="Milestone description" className={field} placeholder="Scope and acceptance criteria" value={milestone.description} onChange={e=>setMilestone({...milestone,description:e.target.value})}/><label className="block text-sm">Due date (optional)<input type="date" className={field} value={milestone.due} onChange={e=>setMilestone({...milestone,due:e.target.value})}/></label><Button type="submit" disabled={!!busy}>Create milestone</Button></form>
+   <div className="mt-4 space-y-3">{(rows.consult_milestones||[]).map(m=><div key={m.id} className="rounded-xl border p-3"><b>{m.title}</b><p className="text-sm text-muted">{m.description} · {m.status}</p><div className="mt-2 flex gap-2">{m.status==='pending'&&<Button size="sm" disabled={!!busy} onClick={()=>void run(m.id,'manage_consult_milestone',{p_project:project,p_record:m.id,p_action:'start'},'Milestone started.')}>Start</Button>}{m.status==='in_progress'&&<Button size="sm" disabled={!!busy} onClick={()=>void run(m.id,'manage_consult_milestone',{p_project:project,p_record:m.id,p_action:'complete'},'Milestone completed; progress recalculated.')}>Complete</Button>}</div></div>)}{!loading&&!rows.consult_milestones?.length&&<p className="text-sm text-muted">No milestones created for this project.</p>}</div></Card>
+   <Card><h3 className="font-bold">Deliverables for client review</h3><p className="mt-2 text-sm text-muted">Submit delivery after verified invoice settlement. The client approves or requests revision.</p><form onSubmit={submitDelivery} className="mt-3 space-y-3"><input required minLength={3} aria-label="Deliverable title" className={field} placeholder="Deliverable title" value={delivery.title} onChange={e=>setDelivery({...delivery,title:e.target.value})}/><textarea aria-label="Deliverable description" className={field} placeholder="Description" value={delivery.description} onChange={e=>setDelivery({...delivery,description:e.target.value})}/><input required type="url" pattern="https://.*" aria-label="Deliverable HTTPS link" className={field} placeholder="HTTPS link to the deliverable" value={delivery.url} onChange={e=>setDelivery({...delivery,url:e.target.value})}/><select aria-label="Linked milestone" className={field} value={delivery.milestone} onChange={e=>setDelivery({...delivery,milestone:e.target.value})}><option value="">No linked milestone</option>{(rows.consult_milestones||[]).map(m=><option key={m.id} value={m.id}>{m.title}</option>)}</select><Button type="submit" disabled={!!busy}>Submit deliverable</Button></form><div className="mt-4 space-y-3">{(rows.consult_deliverables||[]).map(d=><div key={d.id} className="rounded-xl border p-3"><b>{d.title}</b><p className="text-sm">{d.status} · {d.client_feedback||'Awaiting client feedback'}</p>{d.file_url?.startsWith('https://')&&<a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-sm underline">Open deliverable</a>}</div>)}{!loading&&!rows.consult_deliverables?.length&&<p className="text-sm text-muted">No deliverables submitted.</p>}</div></Card>
+  </div><Card><h3 className="font-bold">Invoices & payment reconciliation</h3><p className="mt-2 text-sm text-muted">Invoice balances and payment intents update from verified settlement. Staff cannot mark an invoice paid here.</p><div className="mt-4 space-y-3">{(rows.consult_invoices||[]).map(i=><div key={i.id} className="rounded-xl border p-3"><b>{i.invoice_number} · {i.title}</b><p className="text-sm">{i.status} · {money(i.amount)} · paid {money(i.amount_paid)} · outstanding {money(Math.max(0,Number(i.amount)-Number(i.amount_paid||0)))}</p><Button size="sm" variant="secondary" onClick={()=>printInvoice(i)}>Print invoice</Button>{(rows.consult_payment_intents||[]).filter(p=>p.invoice_id===i.id).map(p=><p className="mt-2 text-xs" key={p.id}>{p.reference} · {p.status} · {money(p.amount)}{p.transaction_ref?` · verified transaction ${p.transaction_ref}`:''}</p>)}</div>)}{!loading&&!rows.consult_invoices?.length&&<p className="text-sm text-muted">No invoice yet. Check the accepted quotation and client proposal response above.</p>}</div></Card></>}
+ </div>;
+}
