@@ -31,7 +31,7 @@ export function AdminSupportPage() {
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
-    if (!supabase) return;
+    if (!supabase) { setNotice('Supabase is not configured.'); return; }
     const [central, host, engineering, business] = await Promise.all([
       supabase
         .from("support_tickets")
@@ -43,7 +43,7 @@ export function AdminSupportPage() {
       supabase
         .from("host_support_tickets")
         .select(
-          "id,ticket_number,subject,category,priority,status,created_at,message",
+          "id,subject,category,priority,status,created_at,message",
         )
         .order("created_at", { ascending: false })
         .limit(100),
@@ -70,7 +70,7 @@ export function AdminSupportPage() {
       ...(host.data || []).map((x) => ({
         id: x.id,
         source: "host" as const,
-        ticket: x.ticket_number,
+        ticket: `HOST-${x.id.slice(0, 8).toUpperCase()}`,
         product: "host",
         subject: x.subject,
         category: x.category,
@@ -136,13 +136,19 @@ export function AdminSupportPage() {
     };
     if (status === "resolved" && ticket.source === "central")
       payload.resolved_at = new Date().toISOString();
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(table)
       .update(payload)
-      .eq("id", ticket.id);
+      .eq("id", ticket.id)
+      .select("id")
+      .maybeSingle();
     setBusy(false);
-    setNotice(error?.message || "Ticket status updated.");
+    if (error || !data) {
+      setNotice(error?.message || 'Ticket was not updated. Refresh and check your access.');
+      return;
+    }
     await load();
+    setNotice("Ticket status updated.");
     setSelected(null);
   }
   async function sendReply() {
@@ -161,17 +167,23 @@ export function AdminSupportPage() {
       message: reply.trim(),
       is_internal: internal,
     });
-    if (!error)
-      await supabase
+    let statusError: string | null = null;
+    if (!error) {
+      const result = await supabase
         .from("support_tickets")
         .update({
           status: internal ? selected.status : "waiting_customer",
           updated_at: new Date().toISOString(),
         })
-        .eq("id", selected.id);
+        .eq("id", selected.id)
+        .select("id")
+        .maybeSingle();
+      if (result.error || !result.data) statusError = result.error?.message || 'Ticket status was not updated.';
+    }
     setBusy(false);
     setNotice(
       error?.message ||
+        (statusError ? `Reply saved, but ticket status needs attention: ${statusError}` : '') ||
         (internal ? "Internal note added." : "Reply added for the customer."),
     );
     if (!error) {
