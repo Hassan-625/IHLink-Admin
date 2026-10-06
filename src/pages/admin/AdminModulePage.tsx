@@ -94,9 +94,9 @@ export function AdminModulePage({module}:{module:string}){
  const userName=profile?[profile.first_name,profile.last_name].filter(Boolean).join(' ')||profile.email:'Administrator';
  const load=async()=>{const client=supabase;if(!client){setError('Supabase is not configured.');setLoading(false);return;}setLoading(true);setError(null);
   const results=await Promise.all(d.metrics.map(async metric=>{let query=client.from(metric.table).select('*',{count:'exact',head:true});if(metric.filter)query=query.eq(metric.filter[0],metric.filter[1]);const {count,error}=await query;return{label:metric.label,count,error};}));
-  const next:Record<string,number|null>={};for(const result of results){next[result.label]=result.count??0;if(result.error)setError(current=>current||result.error!.message);}setCounts(next);setLoading(false);};
+  const next:Record<string,number|null>={};for(const result of results){next[result.label]=result.error?null:result.count??0;if(result.error)setError(current=>current||result.error!.message);}setCounts(next);setLoading(false);};
  useEffect(()=>{void load();},[module]);
- const metrics=useMemo(()=>d.metrics.map(metric=>({label:metric.label,value:loading?'…':String(counts[metric.label]??0),change:undefined})),[d,counts,loading]);
+ const metrics=useMemo(()=>d.metrics.map(metric=>({label:metric.label,value:loading?'…':counts[metric.label]==null?'Unavailable':String(counts[metric.label]),change:undefined})),[d,counts,loading]);
  return <ModulePage product="corporate" sections={adminSections} title={d.title} eyebrow="Central Administration" description={d.desc} userName={userName} userRole={profile?.role?.replaceAll('_',' ')||'Authorized Administration'} primaryAction={d.action} metrics={metrics}>
   {error&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Some live data could not be loaded: {error}</div>}
   <div className="grid gap-4 lg:grid-cols-[1.3fr_.7fr]">
