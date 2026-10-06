@@ -14,10 +14,10 @@ const tone=(s:string):"green"|"amber"|"red"|"blue"=>s==="completed"?"green":s===
 export function AdminDeletionRequestsPage(){
  const {profile}=useAuth();
  const [rows,setRows]=useState<RequestRow[]>([]),[people,setPeople]=useState<Person[]>([]),[notice,setNotice]=useState(""),[busy,setBusy]=useState("");
- const load=useCallback(async()=>{if(!supabase)return;const [r,p]=await Promise.all([
+ const load=useCallback(async(preserveNotice=false)=>{if(!supabase)return;const [r,p]=await Promise.all([
   supabase.from("account_deletion_requests").select("id,user_id,status,reason,requested_at,reviewed_at,approved_at,completed_at,resolution_note,anonymised").order("requested_at",{ascending:false}).limit(200),
   supabase.from("profiles").select("id,email,first_name,last_name,status")
- ]);setRows((r.data||[]) as RequestRow[]);setPeople((p.data||[]) as Person[]);setNotice(r.error?.message||p.error?.message||"");},[]);
+ ]);setRows((r.data||[]) as RequestRow[]);setPeople((p.data||[]) as Person[]);if(r.error||p.error)setNotice(r.error?.message||p.error?.message||"");else if(!preserveNotice)setNotice("");},[]);
  useEffect(()=>{void load()},[load]);
  const personMap=useMemo(()=>new Map(people.map(p=>[p.id,p])),[people]);
  const pending=rows.filter(r=>r.status==="pending").length,approved=rows.filter(r=>r.status==="approved").length;
@@ -28,14 +28,14 @@ export function AdminDeletionRequestsPage(){
   const note=window.prompt(action==="reject"?"Rejection note (recommended):":"Approval/review note (optional):","")??undefined;if(note===undefined)return;
   setBusy(row.id);setNotice("");
   const {error}=await supabase.rpc("review_account_deletion",{p_request_id:row.id,p_action:action,p_note:note.trim()||null});
-  if(error)setNotice(error.message);else{setNotice(action==="approve"?"Request approved. Customer access has been revoked; final Auth deletion remains a separate controlled step.":"Request rejected.");await load()}setBusy("");
+  if(error)setNotice(error.message);else{setNotice(action==="approve"?"Request approved. Customer access has been revoked; final Auth deletion remains a separate controlled step.":"Request rejected.");await load(true)}setBusy("");
  }
  async function finalise(row:RequestRow){
   if(!supabase||busy)return;
   if(!window.confirm("Finalise this approved request? This will soft-delete the Supabase Auth account and anonymise customer profile PII while retaining audit/financial references."))return;
   setBusy(row.id);setNotice("");
   const {data,error}=await supabase.functions.invoke("finalize-account-deletion",{body:{request_id:row.id}});
-  if(error)setNotice(error.message);else if(data?.error)setNotice(data.error+(data.detail?`: ${data.detail}`:""));else{setNotice("Account deletion finalised: Auth access removed and profile PII anonymised.");await load()}setBusy("");
+  if(error){try{const body=await (error as any).context?.json();setNotice(body?.message||body?.error||error.message)}catch{setNotice(error.message)}}else if(data?.error)setNotice(data.error+(data.detail?`: ${data.detail}`:""));else{setNotice("Account deletion finalised: Auth access removed and profile PII anonymised.");await load(true)}setBusy("");
  }
  const name=[profile?.first_name,profile?.last_name].filter(Boolean).join(" ")||"IHLink Super Admin";
  return <ModulePage product="corporate" sections={adminSections} title="Account Deletion Requests" description="Review customer closure requests, revoke ecosystem access safely, and separately finalise Auth deletion/anonymisation with a protected audit trail." userName={name} userRole="Super Administrator" primaryAction="Deletion review">
