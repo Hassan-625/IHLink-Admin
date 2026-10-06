@@ -128,7 +128,16 @@ export function AdminLivePage({ module }: { module: "administrators" | "roles" |
     await supabase.from("audit_logs").insert({ actor_id: currentProfile.id, action, product: product || "system", target_type: "profile", target_id: targetId });
   }
 
-  async function updateBasePrice(row:PriceRecord,value:number|null){ if(!supabase||!canManage)return; setSaving(true);setError(null); const stamp=new Date().toISOString(); const {error:e}=await supabase.from("service_catalog").update({base_price:value,updated_at:stamp}).eq("id",row.id); if(e){setError(e.message);setSaving(false);return;} let sourceError:any=null; if(row.source_table&&row.source_id){ if(row.source_table==="business_catalog")({error:sourceError}=await supabase.from("business_catalog").update({base_price:value,updated_at:stamp}).eq("id",row.source_id)); else if(row.source_table==="host_plans"&&value!=null)({error:sourceError}=await supabase.from("host_plans").update({monthly_price:value,updated_at:stamp}).eq("id",row.source_id)); else if(row.source_table==="host_domain_prices"&&value!=null)({error:sourceError}=await supabase.from("host_domain_prices").update({registration_price:value,updated_at:stamp}).eq("id",row.source_id)); } if(sourceError)setError(`Central price saved, but source catalogue update failed: ${sourceError.message}`); else setSuccess("Customer base price updated across the linked platform catalogue."); await load();setSaving(false); }
+  async function updateBasePrice(row:PriceRecord,value:number|null){
+    if(!supabase||!canManage||saving)return;
+    if(value!==null&&(!Number.isFinite(value)||value<0||value!==Math.round(value*100)/100)){setError('Enter a non-negative price with at most two decimal places.');return;}
+    setSaving(true);setError(null);setSuccess(null);
+    const result=await (supabase as any).rpc('admin_set_linked_service_price',{p_id:row.id,p_price:value,p_expected:row.base_price});
+    if(result.error)setError(result.error.message);
+    else if(result.data!==row.id)setError('No catalogue price was changed.');
+    else{setSuccess('The central and linked catalogue prices were saved together.');await load();}
+    setSaving(false);
+  }
 
   async function updateProfile(id: string, changes: Partial<Pick<UserProfile, "role" | "status">>) {
     if (!supabase || !canManage) return;
