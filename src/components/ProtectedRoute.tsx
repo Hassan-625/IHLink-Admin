@@ -34,7 +34,7 @@ export function ProtectedRoute({
     return (
       <Navigate to="/signin" replace state={{ from: location.pathname + location.search }} />
     );
-  if (profile?.status === "suspended")
+  if (profile?.status !== "active")
     return <Navigate to="/admin/access-denied" replace />;
   if (roles && (!profile || !roles.includes(profile.role)))
     return <Navigate to="/admin/access-denied" replace />;
