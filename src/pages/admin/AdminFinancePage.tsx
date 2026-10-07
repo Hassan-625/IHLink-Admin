@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { adminSections, badge } from "./adminShared";
+import { InvoiceWorkbench } from "@/components/InvoiceWorkbench";
 
 type Row = {
   id: string;
@@ -411,6 +412,7 @@ export function AdminFinancePage() {
         { label: "School collections", value: money(schoolVolume) },
       ]}
     >
+      <InvoiceWorkbench />
       {notice && (
         <div className="rounded-xl border bg-white p-3 text-sm">{notice}</div>
       )}
