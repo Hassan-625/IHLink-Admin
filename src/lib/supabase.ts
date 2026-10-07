@@ -1,3 +1,4 @@
+import { browserAuthStorage } from './authStorage';
 import { createClient } from "@supabase/supabase-js";
 
 // These are public browser credentials (not the service-role secret). Environment
@@ -13,6 +14,7 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKe
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabasePublishableKey!, {
       auth: {
+        storage: browserAuthStorage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
