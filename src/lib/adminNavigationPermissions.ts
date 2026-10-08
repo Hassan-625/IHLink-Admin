@@ -3,7 +3,7 @@ const products:Record<string,ProductKey>={datasub:'datasub',schoolpro:'schoolpro
 export function canOpenAdminPath(path:string,profile:UserProfile|null,grants:AdminProductAccess[]){
  if(profile?.status!=='active')return false;
  if(profile.role==='super_admin')return true;
- if(path.startsWith('/admin/schoolpro/onboarding'))return false;
+ if(path.startsWith('/admin/schoolpro/onboarding')||path.startsWith('/admin/datasub/referrals'))return false;
  if(!['platform_admin','support','finance'].includes(profile.role))return false;
  if(!path.startsWith('/admin'))return true;
  const module=path.split('/')[2]||'';

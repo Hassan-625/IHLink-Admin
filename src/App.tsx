@@ -1,3 +1,4 @@
+import {AdminDataSubReferrals} from '@/pages/admin/AdminDataSubReferrals';
 import {useAuth} from '@/context/AuthContext';
 import {canOpenAdminPath} from '@/lib/adminNavigationPermissions';
 import {AuthHandoffPage} from '@/pages/auth/AuthHandoffPage';
@@ -59,6 +60,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/content" element={<Guard superOnly><AdminContentManager/></Guard>}/>
   <Route path="/admin/platform-builder" element={<Guard superOnly><AdminPlatformFeatureBuilder/></Guard>}/>
   <Route path="/admin/navigation-builder" element={<Guard superOnly><AdminNavigationBuilder/></Guard>}/>
+  <Route path="/admin/datasub/referrals" element={<Guard superOnly><AdminDataSubReferrals/></Guard>}/>
   <Route path="/admin/datasub" element={<Guard product="datasub"><AdminDataSubPage/></Guard>}/>
   <Route path="/admin/datasub/provider-pricing" element={<Guard product="datasub"><AdminDataSubProviderPricing/></Guard>}/>
   <Route path="/admin/schoolpro" element={module('schoolpro')}/>
