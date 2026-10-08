@@ -92,7 +92,7 @@ export function AdminFinancePage() {
 
   const load = useCallback(async () => {
     if (!supabase) return;
-    const [dt, wf, dc, sp, si, ho, cp, bp, bi, le, rr,ba,tr] = await Promise.all([
+    const [dt, wf, dc, sp, si, ho, cp, bp, bi, le, rr,ba,tr,subscriptionInvoices] = await Promise.all([
       supabase
         .from("datasub_transactions")
         .select("id,reference,service_type,amount,status,created_at")
@@ -148,8 +148,10 @@ export function AdminFinancePage() {
         )
         .order("created_at", { ascending: false })
         .limit(100),supabase.from("ihlink_bank_accounts").select("*").order("is_default",{ascending:false}),supabase.from("direct_transfer_submissions").select("id,bank_account_id,platform_code,source_reference,amount,sender_name,sender_bank,customer_reference,status,created_at,proof_storage_path,admin_note,transferred_at").order("created_at",{ascending:false}).limit(100),
+      supabase.from('schoolpro_subscription_intents').select('id,reference,amount,status,created_at,invoice_kind').order('created_at',{ascending:false}).limit(200),
     ]);
     const combined: Row[] = [
+      ...(subscriptionInvoices.data||[]).map(x=>({id:x.id,source:'SchoolPro subscription invoice',reference:x.reference,product:'schoolpro',description:x.invoice_kind==='demo'?'Free SchoolPro demo invoice':'SchoolPro annual subscription invoice',amount:Number(x.amount),direction:'credit' as const,status:x.status,created_at:x.created_at,classification:'receivable' as const})),
       ...(dt.data || []).map((x) => ({
         id: x.id,
         source: "DataSub transaction",
