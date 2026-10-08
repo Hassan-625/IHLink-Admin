@@ -15,11 +15,9 @@ Deno.serve(async req=>{
  if(recent?.length)return out({error:"Please wait two minutes before resending"},429);
  const {data:{user:owner}}=await db.auth.admin.getUserById(school.owner_id);if(!owner?.email||!owner.email_confirmed_at)return out({error:"Owner email verification required"},409);
  const {error:record}=await db.from("audit_logs").insert({actor_id:user.id,action:"schoolpro_owner_access_requested",product:"schoolpro",target_type:"schoolpro_school",target_id:school_id,metadata:{recipient_user_id:school.owner_id}});if(record)return out({error:"Email request could not be saved"},503);
- const recovery=createClient(url,anon,{auth:{persistSession:false}});
- const {error:emailError}=await recovery.auth.resetPasswordForEmail(owner.email,{redirectTo:"https://ihlink-schoolpro.onrender.com/auth/update-password"});
  await db.from("schoolpro_email_queue").update({status:"pending",error:null}).eq("school_id",school_id).eq("template_key","workspace_subscription_invoice").eq("status","failed");
  const response=await fetch(url+"/functions/v1/schoolpro-email-worker",{method:"POST",headers:{Authorization:authorization,apikey:anon,"Content-Type":"application/json"},body:JSON.stringify({school_id}),signal:AbortSignal.timeout(20000)}).catch(()=>null);
  const result=response?await response.json().catch(()=>({})):null;
- return out({password_email_requested:!emailError,invoice_emails_sent:result?.sent||0,invoice_email_pending:!response?.ok||!!result?.failed,email_delivery_verified:false});
+ return out({password_email_requested:false,uses_existing_password:true,invoice_emails_sent:result?.sent||0,invoice_email_pending:!response?.ok||!!result?.failed,email_delivery_verified:false});
  }catch{return out({error:"Owner access email could not be requested. Please try again."},503);}
 });
