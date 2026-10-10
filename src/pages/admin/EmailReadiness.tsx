@@ -1,0 +1,12 @@
+import {useEffect,useState} from 'react';
+import {supabase} from '@/lib/supabase';
+import {Card} from '@/components/ui/Card';
+import {Button} from '@/components/ui/Button';
+type Job={id:string;product:string;subject:string;status:string;attempts:number};
+export function EmailReadiness(){
+ const [status,setStatus]=useState<{provider_configured:boolean;provider:string|null;sender:string|null}|null>(null),[jobs,setJobs]=useState<Job[]>([]),[notice,setNotice]=useState('');
+ async function load(){if(!supabase)return;const [s,q]=await Promise.all([supabase.functions.invoke('ihlink-email-status'),supabase.from('ihlink_email_queue').select('id,product,subject,status,attempts').order('created_at',{ascending:false}).limit(30)]);if(s.error||q.error){setNotice('Email readiness or queue details could not be loaded.');return;}setStatus(s.data);setJobs(q.data||[]);setNotice('');}
+ useEffect(()=>{void load()},[]);
+ async function retry(id:string){if(!supabase)return;const {error}=await supabase.rpc('retry_ihlink_email',{p_id:id});if(error)setNotice('This email could not be queued for retry. Check your permissions.');else await load();}
+ return <Card><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-bold">Email readiness and delivery queue</h3><Button size="sm" variant="secondary" onClick={()=>void load()}>Refresh</Button></div><p className="mt-3 text-sm">{status?status.provider_configured?`Provider configured: ${status.provider}. Sender: ${status.sender}.`:'Email delivery is prepared. Provider credentials and a verified sender are still required.':'Checking email settings…'}</p><p className="mt-2 text-xs text-muted">Password recovery uses the separate Supabase Auth SMTP settings. Accepted messages have been accepted by the provider; inbox delivery still depends on the receiving mailbox.</p>{notice&&<p role="status" className="mt-3 text-sm">{notice}</p>}<div className="mt-4 space-y-2">{jobs.map(j=><div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm"><div><p className="font-semibold">{j.subject}</p><p className="text-xs text-muted">{j.product} · {j.status} · {j.attempts} attempt{j.attempts===1?'':'s'}</p></div>{j.status==='failed'&&<Button size="sm" variant="secondary" onClick={()=>void retry(j.id)}>Retry failed email</Button>}</div>)}{!jobs.length&&<p className="text-sm text-muted">No service emails have been queued yet.</p>}</div></Card>;
+}
