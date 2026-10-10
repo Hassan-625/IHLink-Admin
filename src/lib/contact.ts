@@ -7,5 +7,5 @@ export const IHLinkContact = {
     "https://wa.me/2348146676278?text=Hello%20IHLink%2C%20I%20would%20like%20to%20make%20an%20enquiry.",
   email: "hassanisahassan12@gmail.com",
   emailHref:
-    "https://outlook.office.com/mail/deeplink/compose?to=hassanisahassan12%40gmail.com&subject=IHLink%20service%20enquiry",
+    "mailto:hassanisahassan12@gmail.com?subject=IHLink%20service%20enquiry",
 } as const;
