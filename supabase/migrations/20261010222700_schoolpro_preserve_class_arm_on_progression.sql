@@ -25,8 +25,7 @@ begin
   update public.schoolpro_students set status='graduated',class_id=null,class_name=null where id=s.id;
  end if;
  update public.schoolpro_promotions set status='applied',applied_by=auth.uid(),applied_at=now() where id=p.id;
-end $function$
-
+end $function$;
 CREATE OR REPLACE FUNCTION public.create_schoolpro_progression(p_student uuid, p_session text, p_decision text, p_to_class uuid DEFAULT NULL::uuid, p_reason text DEFAULT NULL::text)
  RETURNS uuid
  LANGUAGE plpgsql
