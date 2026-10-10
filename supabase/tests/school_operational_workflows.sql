@@ -1,0 +1,66 @@
+begin;
+do $$
+<<fixture>>
+declare owner_id uuid:=gen_random_uuid(); outsider uuid:=gen_random_uuid(); school_id uuid:=gen_random_uuid(); class_id uuid:=gen_random_uuid(); other_class uuid:=gen_random_uuid(); student_id uuid:=gen_random_uuid(); subject_id uuid:=gen_random_uuid(); second_subject uuid:=gen_random_uuid(); scheme_id uuid:=gen_random_uuid(); fee_id uuid; invoice_id uuid; result jsonb; ticket_id uuid:=gen_random_uuid(); denied boolean; book_id uuid:=gen_random_uuid(); route_id uuid:=gen_random_uuid(); room_id uuid:=gen_random_uuid(); loan_id uuid; allocation_id uuid; progression_id uuid; leave_id uuid:=gen_random_uuid(); staff_id uuid:=gen_random_uuid(); staff_user uuid:=gen_random_uuid();
+begin
+ insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) select v,'authenticated','authenticated','support-fixture-'||v||'@example.invalid','{}','{"first_name":"Support","middle_name":"Test","last_name":"Fixture"}',now(),now() from unnest(array[owner_id,outsider,staff_user])v;
+ insert into public.schoolpro_schools(id,owner_id,name,code)values(school_id,owner_id,'Class workflow fixture','FIX-'||school_id);
+ insert into public.schoolpro_subscriptions(school_id,tier,billing_cycle,status,renews_at)values(school_id,'enterprise','termly','active',now()+interval '90 days');update public.schoolpro_schools set status='active' where id=school_id;
+ insert into public.schoolpro_classes(id,school_id,name,level)values(class_id,school_id,'SS 1','senior_secondary'),(other_class,school_id,'JSS 1','junior_secondary');
+ insert into public.schoolpro_students(id,school_id,admission_number,first_name,last_name,class_id,class_name)values(student_id,school_id,'FIX-1','One','Fixture',class_id,'SS 1');
+ insert into public.schoolpro_subjects(id,school_id,name,code,class_name)values(subject_id,school_id,'Mathematics','FIX-MTH','SS 1'),(second_subject,school_id,'English','FIX-ENG','SS 1');
+ insert into public.schoolpro_assessment_schemes(id,school_id,name,school_level,components) values(scheme_id,school_id,'Fixture assessment','senior_secondary','[{"key":"ca","label":"CA","maxScore":40},{"key":"exam","label":"Exam","maxScore":60}]');
+ insert into public.schoolpro_results(school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,status,locked)values(school_id,student_id,subject_id,'First Term','2026/2027',scheme_id,'{"ca":30,"exam":50}','published',true),(school_id,student_id,second_subject,'First Term','2026/2027',scheme_id,'{"ca":25,"exam":45}','published',true);
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);execute 'set local role authenticated';
+ result:=public.schoolpro_class_broadsheet(school_id,class_id,'First Term','2026/2027');
+ if jsonb_array_length(result->'rows')<>1 or jsonb_array_length(result->'subjects')<>2 or (result->'rows'->0->>'total')::numeric<>150 or (result->'rows'->0->>'average')::numeric<>75 or (result->'rows'->0->'scores'->>subject_id::text)::numeric<>80 then raise exception 'Subject matrix or summary incorrect: %',result;end if;
+ result:=public.create_schoolpro_fee_bundle(school_id,'Term charges',array['SS 1'],'First Term','2026/2027',null,'[{"label":"Tuition","amount":100,"category":"fee"},{"label":"Books","amount":20,"category":"books"}]');fee_id:=(result->'structures'->>0)::uuid;
+ select id into invoice_id from public.schoolpro_invoices where fee_structure_id=fee_id;
+ if (select amount_due from public.schoolpro_invoices where id=invoice_id)<>120 or (select count(*) from public.schoolpro_fee_items where fee_structure_id=fee_id)<>2 then raise exception 'Fee bundle not atomic or invoice total incorrect';end if;
+ perform public.edit_schoolpro_fee_invoice(invoice_id,'Revised charges',125,null,'Testing');
+ if (select amount_due from public.schoolpro_invoices where id=invoice_id)<>125 then raise exception 'Invoice editor failed';end if;
+ denied:=false;begin perform public.edit_schoolpro_fee_invoice(invoice_id,'Bad',-1,null,null);exception when others then denied:=true;end;if not denied then raise exception 'Negative invoice amount accepted';end if;
+ perform public.edit_schoolpro_fee_bundle(fee_id,'Updated term charges',null,'[{"label":"Tuition","amount":150,"category":"fee"},{"label":"Trip","amount":30,"category":"other","is_optional":true}]');
+ if (select amount_due from public.schoolpro_invoices where id=invoice_id)<>150 or (select amount from public.schoolpro_fee_structures where id=fee_id)<>150 then raise exception 'Charge editor total incorrect';end if;
+ denied:=false;begin perform public.edit_schoolpro_fee_bundle(fee_id,'Bad',null,'[{"label":"Bad","amount":-1}]');exception when others then denied:=true;end;if not denied then raise exception 'Negative charge accepted';end if;
+ insert into public.support_tickets(id,user_id,product,subject,message)values(ticket_id,owner_id,'datasub','Fixture support','Fixture support message');
+ if not exists(select 1 from public.ihlink_email_queue where source='support_tickets' and source_id=ticket_id::text and recipient_email='hassanisahassan12@gmail.com') then raise exception 'Support email missing';end if;
+
+ insert into public.schoolpro_library_books(id,school_id,title,copies,available_copies) values(book_id,school_id,'Workflow fixture',2,2);
+ loan_id:=public.borrow_schoolpro_library_book(book_id,student_id,null,now()+interval '7 days');
+ if (select available_copies from public.schoolpro_library_books where id=book_id)<>1 then raise exception 'Borrow did not update copies';end if;
+ perform public.return_schoolpro_library_book(loan_id,0);perform public.return_schoolpro_library_book(loan_id,0);
+ if (select available_copies from public.schoolpro_library_books where id=book_id)<>2 then raise exception 'Return is not idempotent';end if;
+ insert into public.schoolpro_transport_routes(id,school_id,name)values(route_id,school_id,'Fixture route');
+ allocation_id:=public.assign_schoolpro_transport(route_id,student_id,'Fixture stop');
+ if not exists(select 1 from public.schoolpro_student_transport where id=allocation_id and active and pickup_point='Fixture stop') then raise exception 'Route assignment failed';end if;
+ insert into public.schoolpro_hostel_rooms(id,school_id,hostel_name,room,capacity) values(room_id,school_id,'Fixture hostel','One',1);
+ allocation_id:=public.schoolpro_allocate_hostel(school_id,student_id,room_id,'2026/2027');
+ if (select occupied from public.schoolpro_hostel_rooms where id=room_id)<>1 then raise exception 'Room occupancy not updated';end if;
+ perform public.schoolpro_vacate_hostel(allocation_id);
+ if (select occupied from public.schoolpro_hostel_rooms where id=room_id)<>0 then raise exception 'Vacancy not updated';end if;
+ update public.schoolpro_classes set arm='A' where id=other_class;
+ progression_id:=public.create_schoolpro_progression(student_id,'2026/2027','promoted',other_class,'Fixture');
+ perform public.apply_schoolpro_promotion(progression_id);perform public.apply_schoolpro_promotion(progression_id);
+ if (select s.class_id from public.schoolpro_students s where s.id=student_id)<>other_class then raise exception 'Promotion did not update enrolment';end if;
+ if (select s.class_name from public.schoolpro_students s where s.id=student_id)<>'JSS 1 A' then raise exception 'Promotion lost class arm';end if;
+ insert into public.schoolpro_members(id,school_id,user_id,role)values(staff_id,school_id,staff_user,'teacher');
+ insert into public.schoolpro_leave_requests(id,school_id,member_id,leave_type,start_date,end_date)values(leave_id,school_id,staff_id,'medical',current_date,current_date+1);
+ perform public.review_schoolpro_leave(leave_id,'approved');
+ if (select status from public.schoolpro_leave_requests where id=leave_id)<>'approved' then raise exception 'Leave approval failed';end if;
+ perform set_config('request.jwt.claim.sub',outsider::text,true);
+ denied:=false;begin perform public.schoolpro_class_broadsheet(school_id,class_id,'First Term','2026/2027');exception when others then denied:=true;end;if not denied then raise exception 'Outsider read broadsheet';end if;
+ denied:=false;begin perform public.edit_schoolpro_fee_invoice(invoice_id,'Other',100,null,null);exception when others then denied:=true;end;if not denied then raise exception 'Outsider edited invoice';end if;
+ denied:=false;begin perform public.edit_schoolpro_fee_bundle(fee_id,'Other',null,'[{"label":"Other","amount":1}]');exception when others then denied:=true;end;if not denied then raise exception 'Outsider edited charges';end if;
+
+ denied:=false;begin perform public.borrow_schoolpro_library_book(book_id,student_id,null,now()+interval '7 days');exception when others then denied:=true;end;if not denied then raise exception 'Outsider borrowed book';end if;
+ denied:=false;begin perform public.assign_schoolpro_transport(route_id,student_id,'Other');exception when others then denied:=true;end;if not denied then raise exception 'Outsider assigned transport';end if;
+ denied:=false;begin perform public.schoolpro_allocate_hostel(school_id,student_id,room_id,'2026/2027');exception when others then denied:=true;end;if not denied then raise exception 'Outsider allocated hostel';end if;
+ execute 'reset role';
+ insert into public.host_support_tickets(user_id,category,subject,message)values(owner_id,'hosting','Fixture hosting','Fixture support message');
+ insert into public.engineering_support_tickets(user_id,category,subject,message)values(owner_id,'other','Fixture engineering','Fixture support message');
+ insert into public.print_support_tickets(user_id,subject,message)values(owner_id,'Fixture print','Fixture support message');
+ insert into public.business_support_tickets(user_id,unit_code,subject,message)values(owner_id,'academy','Fixture academy','Fixture support message');
+ if (select count(*) from public.ihlink_email_queue where user_id=owner_id and source in ('support_tickets','host_support_tickets','engineering_support_tickets','print_support_tickets','business_support_tickets'))<>5 then raise exception 'Some platforms did not queue support';end if;
+end $$;
+rollback;
