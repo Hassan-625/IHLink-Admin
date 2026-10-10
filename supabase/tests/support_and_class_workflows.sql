@@ -20,11 +20,15 @@ begin
  perform public.edit_schoolpro_fee_invoice(invoice_id,'Revised charges',125,null,'Testing');
  if (select amount_due from public.schoolpro_invoices where id=invoice_id)<>125 then raise exception 'Invoice editor failed';end if;
  denied:=false;begin perform public.edit_schoolpro_fee_invoice(invoice_id,'Bad',-1,null,null);exception when others then denied:=true;end;if not denied then raise exception 'Negative invoice amount accepted';end if;
+ perform public.edit_schoolpro_fee_bundle(fee_id,'Updated term charges',null,'[{"label":"Tuition","amount":150,"category":"fee"},{"label":"Trip","amount":30,"category":"other","is_optional":true}]');
+ if (select amount_due from public.schoolpro_invoices where id=invoice_id)<>150 or (select amount from public.schoolpro_fee_structures where id=fee_id)<>150 then raise exception 'Charge editor total incorrect';end if;
+ denied:=false;begin perform public.edit_schoolpro_fee_bundle(fee_id,'Bad',null,'[{"label":"Bad","amount":-1}]');exception when others then denied:=true;end;if not denied then raise exception 'Negative charge accepted';end if;
  insert into public.support_tickets(id,user_id,product,subject,message)values(ticket_id,owner_id,'datasub','Fixture support','Fixture support message');
  if not exists(select 1 from public.ihlink_email_queue where source='support_tickets' and source_id=ticket_id::text and recipient_email='hassanisahassan12@gmail.com') then raise exception 'Support email missing';end if;
  perform set_config('request.jwt.claim.sub',outsider::text,true);
  denied:=false;begin perform public.schoolpro_class_broadsheet(school_id,class_id,'First Term','2026/2027');exception when others then denied:=true;end;if not denied then raise exception 'Outsider read broadsheet';end if;
  denied:=false;begin perform public.edit_schoolpro_fee_invoice(invoice_id,'Other',100,null,null);exception when others then denied:=true;end;if not denied then raise exception 'Outsider edited invoice';end if;
+ denied:=false;begin perform public.edit_schoolpro_fee_bundle(fee_id,'Other',null,'[{"label":"Other","amount":1}]');exception when others then denied:=true;end;if not denied then raise exception 'Outsider edited charges';end if;
  execute 'reset role';
  insert into public.host_support_tickets(user_id,category,subject,message)values(owner_id,'hosting','Fixture hosting','Fixture support message');
  insert into public.engineering_support_tickets(user_id,category,subject,message)values(owner_id,'other','Fixture engineering','Fixture support message');
