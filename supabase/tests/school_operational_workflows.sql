@@ -39,9 +39,11 @@ begin
  if (select occupied from public.schoolpro_hostel_rooms where id=room_id)<>1 then raise exception 'Room occupancy not updated';end if;
  perform public.schoolpro_vacate_hostel(allocation_id);
  if (select occupied from public.schoolpro_hostel_rooms where id=room_id)<>0 then raise exception 'Vacancy not updated';end if;
+ update public.schoolpro_classes set arm='A' where id=other_class;
  progression_id:=public.create_schoolpro_progression(student_id,'2026/2027','promoted',other_class,'Fixture');
  perform public.apply_schoolpro_promotion(progression_id);perform public.apply_schoolpro_promotion(progression_id);
  if (select s.class_id from public.schoolpro_students s where s.id=student_id)<>other_class then raise exception 'Promotion did not update enrolment';end if;
+ if (select s.class_name from public.schoolpro_students s where s.id=student_id)<>'JSS 1 A' then raise exception 'Promotion lost class arm';end if;
  insert into public.schoolpro_members(id,school_id,user_id,role)values(staff_id,school_id,staff_user,'teacher');
  insert into public.schoolpro_leave_requests(id,school_id,member_id,leave_type,start_date,end_date)values(leave_id,school_id,staff_id,'medical',current_date,current_date+1);
  perform public.review_schoolpro_leave(leave_id,'approved');
