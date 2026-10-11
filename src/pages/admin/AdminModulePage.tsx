@@ -25,6 +25,7 @@ const defs:Record<string,ModuleDef>={
   links:[
 {label:'School Registration Requests',href:'/admin/schoolpro/onboarding',description:'Review app/browser school submissions, create workspaces and manage activation.'},
 {label:'School Administration',href:'/admin/schoolpro/workspace/overview',description:'Open the selected school administration dashboard.'},
+{label:'Former Students & Transcripts',href:'/admin/schoolpro/workspace/former-students',description:'Graduation records and academic transcript issuance.'},
 {label:'Students & Enrollment',href:'/admin/schoolpro/workspace/students',description:'Open enrolled students and school records.'},
 {label:'Admissions',href:'/admin/schoolpro/workspace/admissions',description:'Applications, verification, offers and enrollment.'},
 {label:'Admissions Workspace',href:'/admin/schoolpro/workspace/admissions',description:'Open the dedicated admissions operations workspace.'},
