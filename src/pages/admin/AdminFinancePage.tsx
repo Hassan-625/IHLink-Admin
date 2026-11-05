@@ -80,6 +80,7 @@ export function AdminFinancePage() {
   const [refunds, setRefunds] = useState<Refund[]>([]); const[banks,setBanks]=useState<Bank[]>([]);const[transfers,setTransfers]=useState<DirectTransfer[]>([]);const[bank,setBank]=useState({label:"IHLink Main Account",bank_name:"",account_name:"",account_number:""});
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
+  const [transferNotice, setTransferNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [entry, setEntry] = useState({
     product: "corporate",
@@ -362,7 +363,10 @@ export function AdminFinancePage() {
   async function saveBank(){if(!supabase||!profile)return;if(!bank.bank_name.trim()||!bank.account_name.trim()||!/^[0-9]{10}$/.test(bank.account_number.trim()))return setNotice("Enter the bank name, account holder and a 10-digit account number.");setBusy(true);const{error}=await supabase.from("ihlink_bank_accounts").insert({...bank,bank_name:bank.bank_name.trim(),account_name:bank.account_name.trim(),account_number:bank.account_number.trim(),is_active:true,is_default:banks.length===0,created_by:profile.id});setBusy(false);setNotice(error?.message||"IHLink bank account saved.");if(!error){setBank({label:"IHLink Main Account",bank_name:"",account_name:"",account_number:""});await load()}}
   async function openTransferProof(path:string|null){if(!supabase||!path)return;const{data,error}=await supabase.storage.from("direct-transfer-proofs").createSignedUrl(path,300);if(error)return setNotice(error.message);window.open(data.signedUrl,"_blank","noopener,noreferrer")}
   async function reviewTransfer(id: string, status: "approved" | "rejected") {
-    if (!supabase || !profile) return;
+    if (!supabase || !profile) {
+      setTransferNotice("Finance review unavailable: the Supabase session or administrator profile is missing. Refresh your session and sign in again.");
+      return;
+    }
     const note = prompt(
       status === "approved"
         ? "Finance verification / reconciliation note (at least 3 characters)"
@@ -370,11 +374,12 @@ export function AdminFinancePage() {
     );
     if (note === null) return;
     if (note.trim().length < 3) {
-      setNotice("Enter a Finance verification or rejection note of at least 3 characters.");
+      setTransferNotice("Enter a Finance verification or rejection note of at least 3 characters.");
       return;
     }
 
     setBusy(true);
+    setTransferNotice("Submitting Finance review… please wait.");
     try {
       const { error } = await supabase.rpc("review_direct_bank_transfer", {
         p_submission: id,
@@ -382,18 +387,24 @@ export function AdminFinancePage() {
         p_note: note.trim(),
       });
 
-      // Refresh the queue first: load() also updates the shared notice state.
-      // Set the action result afterwards so the RPC error/success remains visible.
-      await load();
-      setNotice(
-        error?.message ||
-          `Direct transfer ${status}. The linked invoice or service subscription has been reconciled where applicable.`,
-      );
+      if (error) {
+        setTransferNotice(`Finance review failed: ${error.message}`);
+      } else {
+        setTransferNotice(`Finance review completed: transfer ${status}. The linked invoice or service subscription was reconciled where applicable.`);
+      }
+
+      // Refresh separately so a queue-loading problem cannot hide the RPC result.
+      try {
+        await load();
+      } catch (refreshError) {
+        const detail = refreshError instanceof Error ? refreshError.message : "unknown refresh error";
+        setTransferNotice((current) => `${current} Queue refresh failed: ${detail}`);
+      }
     } catch (cause) {
-      setNotice(
+      setTransferNotice(
         cause instanceof Error
-          ? cause.message
-          : "Unable to complete the direct-transfer review. Please retry or inspect the Finance logs.",
+          ? `Finance review failed: ${cause.message}`
+          : "Finance review failed unexpectedly. Check the browser console and Supabase logs before retrying.",
       );
     } finally {
       setBusy(false);
@@ -570,7 +581,7 @@ export function AdminFinancePage() {
           </table>
         </div>
       </Card>
-      <div className="grid gap-6 xl:grid-cols-2"><Card><h3 className="font-bold">IHLink direct-transfer bank accounts</h3><p className="mt-1 text-xs text-muted">These accounts are for IHLink-owned services only. School fee collection remains school-owned.</p><div className="mt-4 grid gap-3"><input className={input} placeholder="Bank name" value={bank.bank_name} onChange={e=>setBank({...bank,bank_name:e.target.value})}/><input className={input} placeholder="Account name" value={bank.account_name} onChange={e=>setBank({...bank,account_name:e.target.value})}/><input className={input} placeholder="Account number" value={bank.account_number} onChange={e=>setBank({...bank,account_number:e.target.value})}/><Button disabled={busy} onClick={()=>void saveBank()}>Add bank account</Button></div><div className="mt-4 divide-y">{banks.map(x=><div className="py-3 text-sm" key={x.id}><b>{x.bank_name} · {x.account_number}</b><p>{x.account_name} {x.is_default?"· Default":""}</p></div>)}</div></Card><Card><h3 className="font-bold">Direct transfers awaiting verification</h3><div className="mt-4 divide-y">{transfers.filter(x=>x.status==="awaiting_verification").map(x=><div className="py-4" key={x.id}><div className="flex justify-between gap-3"><div><b>{x.customer_reference}</b><p className="text-xs text-muted">{x.platform_code} · {x.source_reference} · {x.sender_name}{x.sender_bank?` · ${x.sender_bank}`:""}</p></div><b>{money(x.amount)}</b></div><p className="mt-2 text-xs font-bold">Receiving account: {banks.find(b=>b.id===x.bank_account_id)?.bank_name||"Account unavailable"} · {banks.find(b=>b.id===x.bank_account_id)?.account_number||"Finance review required"}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="secondary" disabled={!x.proof_storage_path} onClick={()=>void openTransferProof(x.proof_storage_path)}>Open receipt / proof</Button><Button size="sm" disabled={busy||!x.proof_storage_path} onClick={()=>void reviewTransfer(x.id,"approved")}>Approve & reconcile</Button><Button size="sm" variant="danger" disabled={busy} onClick={()=>void reviewTransfer(x.id,"rejected")}>Reject</Button></div></div>)}{!transfers.some(x=>x.status==="awaiting_verification")&&<p className="py-5 text-sm text-muted">No direct transfers awaiting verification.</p>}</div></Card></div>
+      <div className="grid gap-6 xl:grid-cols-2"><Card><h3 className="font-bold">IHLink direct-transfer bank accounts</h3><p className="mt-1 text-xs text-muted">These accounts are for IHLink-owned services only. School fee collection remains school-owned.</p><div className="mt-4 grid gap-3"><input className={input} placeholder="Bank name" value={bank.bank_name} onChange={e=>setBank({...bank,bank_name:e.target.value})}/><input className={input} placeholder="Account name" value={bank.account_name} onChange={e=>setBank({...bank,account_name:e.target.value})}/><input className={input} placeholder="Account number" value={bank.account_number} onChange={e=>setBank({...bank,account_number:e.target.value})}/><Button disabled={busy} onClick={()=>void saveBank()}>Add bank account</Button></div><div className="mt-4 divide-y">{banks.map(x=><div className="py-3 text-sm" key={x.id}><b>{x.bank_name} · {x.account_number}</b><p>{x.account_name} {x.is_default?"· Default":""}</p></div>)}</div></Card><Card><h3 className="font-bold">Direct transfers awaiting verification</h3>{transferNotice && <div role="status" aria-live="polite" className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">{transferNotice}</div>}<div className="mt-4 divide-y">{transfers.filter(x=>x.status==="awaiting_verification").map(x=><div className="py-4" key={x.id}><div className="flex justify-between gap-3"><div><b>{x.customer_reference}</b><p className="text-xs text-muted">{x.platform_code} · {x.source_reference} · {x.sender_name}{x.sender_bank?` · ${x.sender_bank}`:""}</p></div><b>{money(x.amount)}</b></div><p className="mt-2 text-xs font-bold">Receiving account: {banks.find(b=>b.id===x.bank_account_id)?.bank_name||"Account unavailable"} · {banks.find(b=>b.id===x.bank_account_id)?.account_number||"Finance review required"}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="secondary" disabled={!x.proof_storage_path} onClick={()=>void openTransferProof(x.proof_storage_path)}>Open receipt / proof</Button><Button size="sm" disabled={busy||!x.proof_storage_path} onClick={()=>void reviewTransfer(x.id,"approved")}>Approve & reconcile</Button><Button size="sm" variant="danger" disabled={busy} onClick={()=>void reviewTransfer(x.id,"rejected")}>Reject</Button></div></div>)}{!transfers.some(x=>x.status==="awaiting_verification")&&<p className="py-5 text-sm text-muted">No direct transfers awaiting verification.</p>}</div></Card></div>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <h3 className="font-bold">Manual ledger entry</h3>
