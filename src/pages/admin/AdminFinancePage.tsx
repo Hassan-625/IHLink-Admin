@@ -447,6 +447,7 @@ export function AdminFinancePage() {
     setBusy(true);
     setTransferNotice("Uploading the replacement receipt and recording the Finance correction…");
     let uploadedPath = "";
+    let correctionSaved = false;
     try {
       const extension = file.type === "application/pdf" ? "pdf" : file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
       uploadedPath = `${profile.id}/finance-resubmissions/${id}/${crypto.randomUUID()}.${extension}`;
@@ -462,15 +463,16 @@ export function AdminFinancePage() {
         p_note: note,
       });
       if (correctionError) throw correctionError;
+      correctionSaved = true;
 
       setTransferNotice("Receipt and bank reference updated. The transfer remains pending Finance verification; no payment was approved or credited.");
       setResubmissionId("");
       setResubmissionReference("");
       setResubmissionNote("");
       setResubmissionFile(null);
-      await load();
+      try { await load(); } catch { setTransferNotice("Receipt and reference were corrected. The transfer remains pending Finance verification, but the queue could not refresh."); }
     } catch (cause) {
-      if (uploadedPath) {
+      if (uploadedPath && !correctionSaved) {
         await supabase.storage.from("direct-transfer-proofs").remove([uploadedPath]);
       }
       setTransferNotice(cause instanceof Error ? `Finance correction failed: ${cause.message}` : "Finance correction failed. No payment was approved.");
