@@ -81,6 +81,10 @@ export function AdminFinancePage() {
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [transferNotice, setTransferNotice] = useState("");
+  const [resubmissionId, setResubmissionId] = useState("");
+  const [resubmissionReference, setResubmissionReference] = useState("");
+  const [resubmissionNote, setResubmissionNote] = useState("");
+  const [resubmissionFile, setResubmissionFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [entry, setEntry] = useState({
     product: "corporate",
@@ -411,6 +415,70 @@ export function AdminFinancePage() {
     }
   }
 
+  async function resubmitTransfer(id: string) {
+    if (!supabase || !profile || !["super_admin", "finance"].includes(profile.role || "")) {
+      setTransferNotice("Only IHLink Finance can replace a receipt or correct a bank reference.");
+      return;
+    }
+    const reference = resubmissionReference.trim();
+    const note = resubmissionNote.trim();
+    const file = resubmissionFile;
+    if (!file) {
+      setTransferNotice("Select the replacement bank receipt first.");
+      return;
+    }
+    if (reference.length < 3 || reference.length > 128) {
+      setTransferNotice("Enter the correct bank transaction reference (3–128 characters).");
+      return;
+    }
+    if (note.length < 3) {
+      setTransferNotice("Enter a Finance correction note of at least 3 characters.");
+      return;
+    }
+    if (!["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setTransferNotice("Receipt must be a PDF, JPEG, PNG or WebP file.");
+      return;
+    }
+    if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
+      setTransferNotice("Receipt must be smaller than 10 MB.");
+      return;
+    }
+
+    setBusy(true);
+    setTransferNotice("Uploading the replacement receipt and recording the Finance correction…");
+    let uploadedPath = "";
+    try {
+      const extension = file.type === "application/pdf" ? "pdf" : file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp";
+      uploadedPath = `${profile.id}/finance-resubmissions/${id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from("direct-transfer-proofs")
+        .upload(uploadedPath, file, { contentType: file.type, upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { error: correctionError } = await supabase.rpc("finance_resubmit_direct_transfer", {
+        p_submission: id,
+        p_customer_reference: reference,
+        p_proof_storage_path: uploadedPath,
+        p_note: note,
+      });
+      if (correctionError) throw correctionError;
+
+      setTransferNotice("Receipt and bank reference updated. The transfer remains pending Finance verification; no payment was approved or credited.");
+      setResubmissionId("");
+      setResubmissionReference("");
+      setResubmissionNote("");
+      setResubmissionFile(null);
+      await load();
+    } catch (cause) {
+      if (uploadedPath) {
+        await supabase.storage.from("direct-transfer-proofs").remove([uploadedPath]);
+      }
+      setTransferNotice(cause instanceof Error ? `Finance correction failed: ${cause.message}` : "Finance correction failed. No payment was approved.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function exportCsv() {
     const header = [
       "Reference",
@@ -581,7 +649,7 @@ export function AdminFinancePage() {
           </table>
         </div>
       </Card>
-      <div className="grid gap-6 xl:grid-cols-2"><Card><h3 className="font-bold">IHLink direct-transfer bank accounts</h3><p className="mt-1 text-xs text-muted">These accounts are for IHLink-owned services only. School fee collection remains school-owned.</p><div className="mt-4 grid gap-3"><input className={input} placeholder="Bank name" value={bank.bank_name} onChange={e=>setBank({...bank,bank_name:e.target.value})}/><input className={input} placeholder="Account name" value={bank.account_name} onChange={e=>setBank({...bank,account_name:e.target.value})}/><input className={input} placeholder="Account number" value={bank.account_number} onChange={e=>setBank({...bank,account_number:e.target.value})}/><Button disabled={busy} onClick={()=>void saveBank()}>Add bank account</Button></div><div className="mt-4 divide-y">{banks.map(x=><div className="py-3 text-sm" key={x.id}><b>{x.bank_name} · {x.account_number}</b><p>{x.account_name} {x.is_default?"· Default":""}</p></div>)}</div></Card><Card><h3 className="font-bold">Direct transfers awaiting verification</h3>{transferNotice && <div role="status" aria-live="polite" className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">{transferNotice}</div>}<div className="mt-4 divide-y">{transfers.filter(x=>x.status==="awaiting_verification").map(x=><div className="py-4" key={x.id}><div className="flex justify-between gap-3"><div><b>{x.customer_reference}</b><p className="text-xs text-muted">{x.platform_code} · {x.source_reference} · {x.sender_name}{x.sender_bank?` · ${x.sender_bank}`:""}</p></div><b>{money(x.amount)}</b></div><p className="mt-2 text-xs font-bold">Receiving account: {banks.find(b=>b.id===x.bank_account_id)?.bank_name||"Account unavailable"} · {banks.find(b=>b.id===x.bank_account_id)?.account_number||"Finance review required"}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="secondary" disabled={!x.proof_storage_path} onClick={()=>void openTransferProof(x.proof_storage_path)}>Open receipt / proof</Button><Button size="sm" disabled={busy||!x.proof_storage_path} onClick={()=>void reviewTransfer(x.id,"approved")}>Approve & reconcile</Button><Button size="sm" variant="danger" disabled={busy} onClick={()=>void reviewTransfer(x.id,"rejected")}>Reject</Button></div></div>)}{!transfers.some(x=>x.status==="awaiting_verification")&&<p className="py-5 text-sm text-muted">No direct transfers awaiting verification.</p>}</div></Card></div>
+      <div className="grid gap-6 xl:grid-cols-2"><Card><h3 className="font-bold">IHLink direct-transfer bank accounts</h3><p className="mt-1 text-xs text-muted">These accounts are for IHLink-owned services only. School fee collection remains school-owned.</p><div className="mt-4 grid gap-3"><input className={input} placeholder="Bank name" value={bank.bank_name} onChange={e=>setBank({...bank,bank_name:e.target.value})}/><input className={input} placeholder="Account name" value={bank.account_name} onChange={e=>setBank({...bank,account_name:e.target.value})}/><input className={input} placeholder="Account number" value={bank.account_number} onChange={e=>setBank({...bank,account_number:e.target.value})}/><Button disabled={busy} onClick={()=>void saveBank()}>Add bank account</Button></div><div className="mt-4 divide-y">{banks.map(x=><div className="py-3 text-sm" key={x.id}><b>{x.bank_name} · {x.account_number}</b><p>{x.account_name} {x.is_default?"· Default":""}</p></div>)}</div></Card><Card><h3 className="font-bold">Direct transfers awaiting verification</h3>{transferNotice && <div role="status" aria-live="polite" className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">{transferNotice}</div>}<div className="mt-4 divide-y">{transfers.filter(x=>x.status==="awaiting_verification").map(x=><div className="py-4" key={x.id}><div className="flex justify-between gap-3"><div><b>{x.customer_reference}</b><p className="text-xs text-muted">{x.platform_code} · {x.source_reference} · {x.sender_name}{x.sender_bank?` · ${x.sender_bank}`:""}</p></div><b>{money(x.amount)}</b></div><p className="mt-2 text-xs font-bold">Receiving account: {banks.find(b=>b.id===x.bank_account_id)?.bank_name||"Account unavailable"} · {banks.find(b=>b.id===x.bank_account_id)?.account_number||"Finance review required"}</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="secondary" disabled={!x.proof_storage_path} onClick={()=>void openTransferProof(x.proof_storage_path)}>Open receipt / proof</Button><Button size="sm" disabled={busy||!x.proof_storage_path} onClick={()=>void reviewTransfer(x.id,"approved")}>Approve & reconcile</Button><Button size="sm" variant="danger" disabled={busy} onClick={()=>void reviewTransfer(x.id,"rejected")}>Reject</Button>{["super_admin","finance"].includes(profile?.role||"")&&<Button size="sm" variant="secondary" disabled={busy} onClick={()=>{setResubmissionId(resubmissionId===x.id?"":x.id);setResubmissionReference(x.customer_reference);setResubmissionNote("");setResubmissionFile(null);}}>Correct receipt / reference</Button>}{resubmissionId===x.id&&<div className="mt-3 grid w-full gap-2 rounded-xl border p-3"><p className="text-sm font-semibold">Finance-only receipt correction</p><input className={input} value={resubmissionReference} onChange={e=>setResubmissionReference(e.target.value)} placeholder="Correct bank transaction reference"/><input className={input} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={e=>setResubmissionFile(e.target.files?.[0]||null)}/><textarea className={input} value={resubmissionNote} onChange={e=>setResubmissionNote(e.target.value)} placeholder="Reason for replacing receipt / correcting reference" rows={2}/><div className="flex flex-wrap gap-2"><Button size="sm" disabled={busy} onClick={()=>void resubmitTransfer(x.id)}>Save correction</Button><Button size="sm" variant="secondary" disabled={busy} onClick={()=>setResubmissionId("")}>Cancel</Button></div><p className="text-xs text-muted">The original receipt and reference remain in the audit history. This action does not approve or credit the transfer.</p></div>}</div></div>)}{!transfers.some(x=>x.status==="awaiting_verification")&&<p className="py-5 text-sm text-muted">No direct transfers awaiting verification.</p>}</div></Card></div>
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <h3 className="font-bold">Manual ledger entry</h3>
