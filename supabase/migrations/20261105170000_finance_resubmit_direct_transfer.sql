@@ -20,7 +20,7 @@ begin
     raise exception 'Active IHLink account required';
   end if;
 
-  if not coalesce(private.is_admin(array['super_admin'::public.user_role, 'finance'::public.user_role]), false) then
+  if not coalesce(private.is_admin(array['finance'::public.user_role]), false) then
     raise exception 'IHLink Finance permission required';
   end if;
 
