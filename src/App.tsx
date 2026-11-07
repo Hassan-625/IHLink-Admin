@@ -40,6 +40,7 @@ import { AdminIdentityManagementPage } from '@/pages/admin/AdminIdentityManageme
 import { AdminLivePage } from '@/pages/admin/AdminLivePage';
 import { AdminOperationalDirectoryPage } from '@/pages/admin/AdminOperationalDirectoryPage';
 import { AdminSchoolProSubscriptions } from '@/pages/admin/AdminSchoolProSubscriptions';
+import {AdminSchoolProStaffDiscipline} from '@/pages/admin/AdminSchoolProStaffDiscipline';
 import { AdminCommercialPricingPage } from '@/pages/admin/AdminCommercialPricingPage';
 import { AdminTemplateStudioPage } from '@/pages/admin/AdminTemplateStudioPage';
 import { AdminEmailTemplatesPage } from '@/pages/admin/AdminEmailTemplatesPage';
@@ -69,6 +70,7 @@ export default function App(){return <Routes><Route path="/auth/handoff" element
   <Route path="/admin/schoolpro/workspace/result-templates" element={<Guard product="schoolpro"><AdminSchoolProResultTemplates/></Guard>}/>
   <Route path="/admin/schoolpro/workspace/documents" element={<Guard product="schoolpro"><AdminSchoolProDocumentStudio/></Guard>}/>
   <Route path="/admin/schoolpro/workspace/branding" element={<Guard product="schoolpro"><AdminSchoolProBranding/></Guard>}/>
+  <Route path="/admin/schoolpro/staff-discipline" element={<Guard superOnly><AdminSchoolProStaffDiscipline/></Guard>}/>
   <Route path="/admin/schoolpro/workspace/:section" element={<Guard product="schoolpro"><AdminSchoolProWorkspace/></Guard>}/>
   <Route path="/admin/consult" element={<Guard product="consult"><AdminConsultPage/></Guard>}/>
   <Route path="/admin/engineering" element={<Guard product="engineering"><AdminEngineeringPage/></Guard>}/>
