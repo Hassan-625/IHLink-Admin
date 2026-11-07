@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const app=readFileSync('src/App.tsx','utf8');
+const nav=readFileSync('src/pages/admin/adminShared.tsx','utf8');
+const modulePage=readFileSync('src/pages/admin/AdminModulePage.tsx','utf8');
+const page=readFileSync('src/pages/admin/AdminSchoolProStaffDiscipline.tsx','utf8');
+assert.match(app,/AdminSchoolProStaffDiscipline/);
+assert.match(app,/\/admin\/schoolpro\/staff-discipline/);
+assert.match(nav,/Staff Disciplinary Oversight/);
+assert.match(modulePage,/Staff Disciplinary Oversight/);
+assert.match(page,/schoolpro_staff_disciplinary_cases/);
+assert.match(page,/schoolpro_staff_disciplinary_events/);
+assert.match(page,/Immutable case event history/);
+assert.match(page,/Read-only platform oversight/);
+assert.doesNotMatch(page,/\.insert\(/);
+assert.doesNotMatch(page,/\.update\(/);
+assert.doesNotMatch(page,/\.delete\(/);
+console.log('PASS: SchoolPro staff disciplinary oversight is routed, navigable and read-only in Control Panel.');
