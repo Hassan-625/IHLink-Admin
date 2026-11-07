@@ -47,6 +47,7 @@ const defs:Record<string,ModuleDef>={
 {label:'Classes',href:'/admin/schoolpro/workspace/academics',description:'Open classes, arms and academic structure.'},
 {label:'Subjects',href:'/admin/schoolpro/workspace/academics',description:'Open subjects and curriculum structure.'},
 {label:'Staff',href:'/admin/schoolpro/workspace/staff',description:'Open staff and school memberships.'},
+{label:'Staff Disciplinary Oversight',href:'/admin/schoolpro/staff-discipline',description:'Read-only platform oversight of staff cases, responses, appeals and immutable history.'},
 {label:'Parents & Guardians',href:'/admin/schoolpro/workspace/guardians',description:'Guardian records, student links and parent access.'},
 {label:'Attendance',href:'/admin/schoolpro/workspace/attendance',description:'Open daily attendance.'},
 {label:'Timetable',href:'/admin/schoolpro/workspace/attendance',description:'Open the timetable workspace.'},
