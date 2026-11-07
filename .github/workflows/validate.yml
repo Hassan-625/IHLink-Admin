@@ -16,5 +16,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --experimental-strip-types --test tests/*.test.ts
+      - run: npm run test:schoolpro-control-panel-disciplinary
       - run: npm run typecheck
       - run: npm run build
