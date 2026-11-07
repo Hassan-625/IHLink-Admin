@@ -1,4 +1,4 @@
-import { BarChart3, Bell, Building2, ClipboardCheck, Cpu, CreditCard, FileText, GraduationCap, Headphones, LayoutDashboard, LockKeyhole, Trash2, Plug, Server, Settings, ShieldCheck, Smartphone, UserCog, Users, Wrench } from 'lucide-react'; import type { SidebarSection } from '@/components/Sidebar';
+import { BarChart3, Bell, Building2, CalendarDays, ClipboardCheck, Cpu, CreditCard, FileText, GraduationCap, Headphones, LayoutDashboard, LockKeyhole, Trash2, Plug, Server, Settings, ShieldCheck, Smartphone, UserCog, Users, Wrench } from 'lucide-react'; import type { SidebarSection } from '@/components/Sidebar';
 import { platformUrl } from '@/lib/platformUrls';
 export const adminSections:SidebarSection[]=[
  {items:[{label:'Command Centre',href:'/admin',icon:<LayoutDashboard className="w-4 h-4"/>},{label:'Corporate Site',href:platformUrl('corporate'),icon:<Building2 className="w-4 h-4"/>},{label:'Customer Dashboard',href:platformUrl('corporate','/account'),icon:<Smartphone className="w-4 h-4"/>},{label:'Products',href:'/admin/products',icon:<BarChart3 className="w-4 h-4"/>},{label:'Base Pricing',href:'/admin/pricing',icon:<CreditCard className="w-4 h-4"/>}]},
