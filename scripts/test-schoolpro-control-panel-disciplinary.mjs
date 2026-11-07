@@ -11,7 +11,7 @@ assert.match(modulePage,/Staff Disciplinary Oversight/);
 assert.match(page,/schoolpro_staff_disciplinary_cases/);
 assert.match(page,/schoolpro_staff_disciplinary_events/);
 assert.match(page,/Immutable case event history/);
-assert.match(page,/Read-only platform oversight/);
+assert.match(page,/Platform-level, read-only oversight/);
 assert.doesNotMatch(page,/\.insert\(/);
 assert.doesNotMatch(page,/\.update\(/);
 assert.doesNotMatch(page,/\.delete\(/);
