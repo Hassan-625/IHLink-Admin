@@ -26,3 +26,10 @@ assert.match(deletion,/schoolpro_execute_workspace_deletion/);
 assert.match(deletion,/Requesters cannot approve their own request/);
 assert.match(deletion,/retain its records/);
 console.log('PASS: SchoolPro staff disciplinary oversight is routed, navigable and read-only in Control Panel.');
+
+assert.match(deletion,/protectedWorkspaceIds/);
+assert.match(deletion,/eb601205-cffd-420d-97d0-7d5ca081628a/);
+assert.match(deletion,/ac7ac8a8-5035-4e39-8868-cad54add84a6/);
+assert.match(deletion,/!isProtected&&row\.status==='pending'/);
+assert.match(deletion,/!isProtected&&row\.status==='approved'/);
+assert.match(deletion,/Protected verification workspace/);
